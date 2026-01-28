@@ -1,0 +1,19 @@
+header:
+  version: 14
+  includes:
+  - ../include/mender-full.yml
+  - ../include/raspberrypi.yml
+
+machine: raspberrypi-armv8
+
+repos:
+  meta-raspberrypi:
+    url: https://github.com/TheYoctoJester/meta-raspberrypi
+    # refers to scarthgap-cm5 preliminary branch
+    commit: d78e8d7b4e828057a13ca7b2c8a122bbe907fc79
+
+local_conf_header:
+  raspberrypi-armv8: |
+    KERNEL_IMAGETYPE_UBOOT ?= "Image"
+    KERNEL_BOOTCMD ?= "booti"
+    UBOOT_MACHINE = "rpi_arm64_config"

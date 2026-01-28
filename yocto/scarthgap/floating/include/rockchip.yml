@@ -1,0 +1,22 @@
+header:
+  version: 14
+
+repos:
+  meta-rockchip:
+    url: https://git.yoctoproject.org/meta-rockchip
+    branch: scarthgap
+
+  meta-mender-community:
+    url: https://github.com/mendersoftware/meta-mender-community.git
+    branch: scarthgap
+    layers:
+      meta-mender-rockchip:
+
+local_conf_header:
+  rockchip: |
+    MENDER_FEATURES_ENABLE:append = " mender-uboot mender-image mender-image-sd"
+    MENDER_FEATURES_DISABLE:append = " mender-grub mender-image-uefi"
+    IMAGE_FSTYPES:remove = "wic wic.bmap mender.bmap"
+    MENDER_PARTITION_ALIGNMENT = "10485760"
+    MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET = "64"
+    IMAGE_INSTALL:append = " kernel-modules "

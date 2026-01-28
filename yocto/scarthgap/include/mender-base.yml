@@ -1,0 +1,49 @@
+header:
+  version: 14
+
+distro: poky
+
+repos:
+  openembedded-core:
+    url: git://git.openembedded.org/openembedded-core.git
+    commit: 95888aa944847cf6dbfac501997a3e2980344b66
+    layers:
+      meta:
+
+  bitbake:
+    url: git://git.openembedded.org/bitbake.git
+    commit: b00f85cf00dd3a5c1858b409b831194edf148659
+    layers:
+      bitbake: disabled
+
+  meta-yocto:
+    url: git://git.yoctoproject.org/git/meta-yocto.git
+    commit: 82602cda1a89644d1acbe230a81c93e3fb5031c8
+    layers:
+      meta-poky:
+      meta-yocto-bsp:
+
+  meta-openembedded:
+    url: git://git.openembedded.org/meta-openembedded
+    commit: e621da947048842109db1b4fd3917a02e0501aa2
+    layers:
+      meta-oe:
+
+  meta-mender:
+    url: https://github.com/mendersoftware/meta-mender.git
+    commit: 4ae8e962a3c011cfc4d9e4b85878c226b2763b0c
+
+    layers:
+      meta-mender-core:
+
+local_conf_header:
+  base: |
+    CONF_VERSION = "2"
+    PACKAGE_CLASSES = "package_ipk"
+    INIT_MANAGER = "systemd"
+
+  mender-artifact: |
+    MENDER_ARTIFACT_NAME = "gha_autobuild"
+
+target:
+  - core-image-minimal

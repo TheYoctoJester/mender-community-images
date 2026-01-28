@@ -1,0 +1,7 @@
+header:
+  version: 14
+  includes:
+  - ../include/mender-full-ubi.yml
+  - ../include/qemu.yml
+
+machine: vexpress-qemu-flash

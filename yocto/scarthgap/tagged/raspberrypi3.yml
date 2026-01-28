@@ -1,0 +1,7 @@
+header:
+  version: 14
+  includes:
+  - ../include/mender-full.yml
+  - ../include/raspberrypi.yml
+
+machine: raspberrypi3

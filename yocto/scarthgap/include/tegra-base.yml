@@ -1,0 +1,48 @@
+header:
+  version: 14
+
+repos:
+  meta-mender:
+    commit: 2f70dbad1441055c299332b7ef33dfe1e4f50c1c # this one fixes the persistent-id for now!
+
+  meta-tegra:
+    url: https://github.com/OE4T/meta-tegra.git
+  meta-tegra-community:
+    url: https://github.com/OE4T/meta-tegra-community.git
+  meta-tegrademo:
+    url: https://github.com/OE4T/tegra-demo-distro.git
+    layers:
+      layers/meta-tegra-support:
+      layers/meta-demo-ci:
+      layers/meta-tegrademo:
+
+  meta-openembedded:
+    layers:
+      meta-filesystems:
+      meta-networking:
+      meta-python:
+
+  meta-virtualization:
+    url: https://git.yoctoproject.org/meta-virtualization.git
+    commit: 6a80f140e387621f62964209a2e07d3bcfb125ce
+
+  meta-mender-community:
+    url: https://github.com/mendersoftware/meta-mender-community.git
+    commit: 9145b8e34bac23c82984ddcdd5468154ffe7af6d
+    layers:
+      meta-mender-tegra/meta-mender-tegra-common:
+
+distro: tegrademo
+
+local_conf_header:
+  tegra: |
+    # these two classes only work as intended when being inherited in the
+    # OE4t setup-env.sh style environment, as they modify bblayers.conf
+    # and expect additional information on the host.
+    INHERIT:remove = "tegra-support-sanity distro_layer_buildinfo"
+    INHERIT += "tegra-mender-setup"
+    MENDER_FEATURES_ENABLE:append = " mender-growfs-data"
+    MENDER_FEATURES_DISABLE:append = " mender-uboot"
+    IMAGE_FSTYPES:tegra = "tegraflash mender dataimg"
+    IMAGE_FSTYPES:pn-tegra-minimal-initramfs:tegra = "${INITRAMFS_FSTYPES}"
+    IMAGE_FSTYPES:pn-tegra-initrd-flash-initramfs:tegra = "${TEGRA_INITRD_FLASH_INITRAMFS_FSTYPES}"

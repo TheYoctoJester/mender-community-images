@@ -1,0 +1,22 @@
+header:
+  version: 14
+
+  includes:
+  - tegra-base.yml
+
+repos:
+  meta-tegra:
+    # refers to the scarthgap branch
+    branch: scarthgap
+  meta-tegra-community:
+    # refers to the scarthgap branch
+    branch: scarthgap
+  meta-tegrademo:
+    # refers to the scarthgap branch
+    branch: scarthgap
+
+  meta-mender-community:
+    url: https://github.com/mendersoftware/meta-mender-community.git
+    branch: scarthgap
+    layers:
+      meta-mender-tegra/meta-mender-tegra-jetpack6:
