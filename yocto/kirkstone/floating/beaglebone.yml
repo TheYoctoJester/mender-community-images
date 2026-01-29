@@ -1,0 +1,13 @@
+header:
+  version: 14
+  includes:
+  - include/mender-full.yml
+
+repos:
+  meta-mender-community:
+    url: https://github.com/mendersoftware/meta-mender-community.git
+    branch: kirkstone
+    layers:
+      meta-mender-beaglebone:
+
+machine: beaglebone-yocto

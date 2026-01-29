@@ -1,0 +1,17 @@
+header:
+  version: 14
+
+repos:
+  meta-mender-community:
+    url: https://github.com/mendersoftware/meta-mender-community.git
+    branch: kirkstone
+    layers:
+      meta-mender-validation:
+
+local_conf_header:
+  validation: |
+    MENDER_FEATURES_ENABLE:append = " mender-prepopulate-inactive-partition "
+    MENDER_FEATURES_DISABLE:append = " mender-growfs-data "
+
+target:
+  - mender-validation-image

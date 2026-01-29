@@ -1,0 +1,5 @@
+header:
+  version: 14
+  includes:
+  - ../../floating/beaglebone.yml
+  - ../../floating/include/validation.yml

@@ -1,0 +1,5 @@
+header:
+  version: 14
+  includes:
+  - ../../floating/raspberrypi4-64.yml
+  - ../../floating/include/validation.yml

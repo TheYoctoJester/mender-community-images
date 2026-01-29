@@ -1,0 +1,37 @@
+header:
+  version: 14
+  includes:
+  - ../include/mender-full.yml
+  - ../include/arm.yml
+  - ../include/qemu.yml
+
+repos:
+  meta-mender-community:
+    url: https://github.com/mendersoftware/meta-mender-community.git
+    commit: b418760a299d2966ed04ab53fac543626435f60c
+    layers:
+      meta-mender-qemu-community:
+
+  openembedded-core:
+    patches:
+      qemuboot-none-fix:
+        repo: meta-mender-community
+        path: patches/openembedded-core/0001-qemuboot-handle-QB_DEFAULT_KERNEL-none-properly.patch
+
+local_conf_header:
+  efi: |
+    EFI_PROVIDER = "grub-efi"
+    MACHINE_FEATURES += "efi"
+    MENDER_EFI_LOADER = "edk2-firmware"
+    MENDER_STORAGE_DEVICE = "/dev/vda"
+
+  qemu: |
+    QB_MACHINE = "-machine virt,secure=on"
+    QB_OPT_APPEND += "-no-acpi"
+    QB_MEM = "-m 2048"
+    QB_DEFAULT_FSTYPE = "uefiimg"
+    QB_DEFAULT_BIOS = "QEMU_EFI.fd"
+    QB_ROOTFS_OPT = ""
+    QB_DEFAULT_KERNEL = "none"
+
+machine: qemuarm64
