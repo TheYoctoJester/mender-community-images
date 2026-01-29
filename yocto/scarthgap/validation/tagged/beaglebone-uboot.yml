@@ -1,0 +1,5 @@
+header:
+  version: 14
+  includes:
+  - ../../tagged/beaglebone-uboot.yml
+  - ../../include/validation.yml
