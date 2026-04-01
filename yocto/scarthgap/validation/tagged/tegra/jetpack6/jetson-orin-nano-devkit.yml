@@ -1,0 +1,5 @@
+header:
+  version: 14
+  includes:
+  - ../../../../tagged/tegra/jetpack6/jetson-orin-nano-devkit.yml
+  - ../../../../include/validation.yml
