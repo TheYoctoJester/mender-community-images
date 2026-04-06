@@ -36,6 +36,9 @@ repos:
       uboot-workdir-fix:
         repo: meta-mender-community
         path: patches/meta-mender/0002-uboot-auto-configure-use-WORKDIR-instead-of-B.patch
+      remove-s-workdir-git:
+        repo: meta-mender-community
+        path: patches/meta-mender/0003-remove-S-WORKDIR-git-assignments-for-wrynose.patch
 
     layers:
       meta-mender-core:
