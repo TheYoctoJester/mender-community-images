@@ -30,8 +30,8 @@ repos:
       meta-oe:
 
   meta-mender:
-    url: https://github.com/mendersoftware/meta-mender.git
-    branch: master
+    url: https://github.com/leon-anavi/meta-mender.git
+    branch: leon/master-wrynose
 
     layers:
       meta-mender-core:

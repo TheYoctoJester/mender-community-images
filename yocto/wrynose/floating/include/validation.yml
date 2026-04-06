@@ -3,8 +3,8 @@ header:
 
 repos:
   meta-mender-community:
-    url: https://github.com/mendersoftware/meta-mender-community.git
-    branch: master
+    url: https://github.com/theyoctojester/meta-mender-community.git
+    branch: tyj/rpi-wrynose-validation-fixes
     layers:
       meta-mender-validation:
 
