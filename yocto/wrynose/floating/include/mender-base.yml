@@ -32,9 +32,17 @@ repos:
   meta-mender:
     url: https://github.com/leon-anavi/meta-mender.git
     branch: leon/master-wrynose
+    patches:
+      uboot-workdir-fix:
+        repo: meta-mender-community
+        path: patches/meta-mender/0002-uboot-auto-configure-use-WORKDIR-instead-of-B.patch
 
     layers:
       meta-mender-core:
+
+  meta-mender-community:
+    url: https://github.com/theyoctojester/meta-mender-community.git
+    branch: tyj/rpi-wrynose-validation-fixes
 
 local_conf_header:
   base: |
