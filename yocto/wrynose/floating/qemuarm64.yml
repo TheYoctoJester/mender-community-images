@@ -18,6 +18,12 @@ repos:
         repo: meta-mender-community
         path: patches/openembedded-core/0001-qemuboot-handle-QB_DEFAULT_KERNEL-none-properly.patch
 
+  meta-mender:
+    patches:
+      qemu-layerseries-fix:
+        repo: meta-mender-community
+        path: patches/meta-mender/0001-meta-mender-qemu-set-LAYERSERIES_COMPAT-to-wrynose.patch
+
 local_conf_header:
   efi: |
     EFI_PROVIDER = "grub-efi"
