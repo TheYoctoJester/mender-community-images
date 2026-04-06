@@ -29,6 +29,7 @@ local_conf_header:
     EFI_PROVIDER = "grub-efi"
     MACHINE_FEATURES += "efi"
     MENDER_EFI_LOADER = "edk2-firmware"
+    PREFERRED_PROVIDER_virtual/bootloader = "edk2-firmware"
     MENDER_STORAGE_DEVICE = "/dev/vda"
 
   qemu: |
