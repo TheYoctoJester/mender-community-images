@@ -30,25 +30,11 @@ repos:
       meta-oe:
 
   meta-mender:
-    url: https://github.com/leon-anavi/meta-mender.git
-    branch: leon/master-wrynose
-    patches:
-      uboot-workdir-fix:
-        repo: meta-mender-community
-        path: patches/meta-mender/0002-uboot-auto-configure-use-WORKDIR-instead-of-B.patch
-      remove-s-workdir-git:
-        repo: meta-mender-community
-        path: patches/meta-mender/0003-remove-S-WORKDIR-git-assignments-for-wrynose.patch
-      uboot-host-strip:
-        repo: meta-mender-community
-        path: patches/meta-mender/0004-uboot-auto-configure-use-host-strip-for-envtools.patch
+    url: https://github.com/theyoctojester/meta-mender.git
+    branch: tyj/wrynose
 
     layers:
       meta-mender-core:
-
-  meta-mender-community:
-    url: https://github.com/theyoctojester/meta-mender-community.git
-    branch: tyj/rpi-wrynose-validation-fixes
 
 local_conf_header:
   base: |
