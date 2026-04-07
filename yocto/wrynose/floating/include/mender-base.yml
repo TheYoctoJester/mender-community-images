@@ -39,6 +39,9 @@ repos:
       remove-s-workdir-git:
         repo: meta-mender-community
         path: patches/meta-mender/0003-remove-S-WORKDIR-git-assignments-for-wrynose.patch
+      uboot-host-strip:
+        repo: meta-mender-community
+        path: patches/meta-mender/0004-uboot-auto-configure-use-host-strip-for-envtools.patch
 
     layers:
       meta-mender-core:
