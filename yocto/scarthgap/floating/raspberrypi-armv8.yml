@@ -6,12 +6,6 @@ header:
 
 machine: raspberrypi-armv8
 
-repos:
-  meta-raspberrypi:
-    url: https://github.com/TheYoctoJester/meta-raspberrypi
-    # refers to scarthgap-cm5 preliminary branch
-    branch: scarthgap-cm5
-
 local_conf_header:
   raspberrypi-armv8: |
     KERNEL_IMAGETYPE_UBOOT ?= "Image"
