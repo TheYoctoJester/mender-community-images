@@ -5,19 +5,19 @@ distro: poky
 
 repos:
   openembedded-core:
-    url: https://git.openembedded.org/openembedded-core
+    url: https://git.openembedded.org/openembedded-core.git
     commit: 036f76ea35c49a78d612093dcd8eb1fac7ded8d7
     layers:
       meta:
 
   bitbake:
-    url: https://git.openembedded.org/bitbake
+    url: https://git.openembedded.org/bitbake.git
     commit: 8e2d1f8de055549b2101614d85454fcd1d0f94b2
     layers:
       bitbake: disabled
 
   meta-yocto:
-    url: https://git.yoctoproject.org/git/meta-yocto
+    url: https://git.yoctoproject.org/git/meta-yocto.git
     commit: 677379f21941363d50f9d946963542b4ccb7e27c
     layers:
       meta-poky:

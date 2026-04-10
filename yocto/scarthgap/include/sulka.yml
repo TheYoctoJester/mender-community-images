@@ -14,7 +14,7 @@ repos:
       meta-networking:
 
   meta-security:
-    url: https://git.yoctoproject.org/meta-security
+    url: https://git.yoctoproject.org/meta-security.git
     commit: bc865c5276c2ab4031229916e8d7c20148dfbac3
 
 local_conf_header:

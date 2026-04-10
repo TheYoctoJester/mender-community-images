@@ -5,19 +5,19 @@ distro: poky
 
 repos:
   openembedded-core:
-    url: https://git.openembedded.org/openembedded-core
+    url: https://git.openembedded.org/openembedded-core.git
     branch: scarthgap
     layers:
       meta:
 
   bitbake:
-    url: https://git.openembedded.org/bitbake
+    url: https://git.openembedded.org/bitbake.git
     branch: "2.8"
     layers:
       bitbake: disabled
 
   meta-yocto:
-    url: https://git.yoctoproject.org/git/meta-yocto
+    url: https://git.yoctoproject.org/git/meta-yocto.git
     branch: scarthgap
     layers:
       meta-poky:
