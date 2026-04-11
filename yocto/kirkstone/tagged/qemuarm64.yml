@@ -6,6 +6,11 @@ header:
   - ../include/qemu.yml
 
 repos:
+  mender-community-images:
+    path: ../../..
+    layers:
+      mender-community-images: excluded
+
   meta-mender-community:
     url: https://github.com/mendersoftware/meta-mender-community.git
     commit: b418760a299d2966ed04ab53fac543626435f60c
@@ -15,8 +20,8 @@ repos:
   openembedded-core:
     patches:
       qemuboot-none-fix:
-        repo: meta-mender-community
-        path: patches/openembedded-core/0001-qemuboot-handle-QB_DEFAULT_KERNEL-none-properly.patch
+        repo: mender-community-images
+        path: yocto/kirkstone/patches/openembedded-core/0001-qemuboot-handle-QB_DEFAULT_KERNEL-none-properly.patch
 
 local_conf_header:
   efi: |
