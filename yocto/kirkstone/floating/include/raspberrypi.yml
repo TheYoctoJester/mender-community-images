@@ -6,6 +6,14 @@ repos:
     url: https://github.com/agherzan/meta-raspberrypi.git
     branch: kirkstone
 
+  meta-lts-mixins:
+    url: https://git.yoctoproject.org/meta-lts-mixins
+    branch: scarthgap/u-boot
+    patches:
+      kirkstone-compat:
+        repo: meta-mender-community
+        path: kas/patches/0001-chore-mark-layer-as-compatible-with-kirkstone.patch
+
   meta-mender-community:
     url: https://github.com/mendersoftware/meta-mender-community.git
     branch: kirkstone
