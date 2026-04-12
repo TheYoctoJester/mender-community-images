@@ -12,6 +12,7 @@ local_conf_header:
     KERNEL_BOOTCMD ?= "booti"
     UBOOT_MACHINE = "rpi_arm64_config"
 
-  raspberrypi5_BCM2712D0: |
-    # at least the 2GB RAM version uses the D0 chip variant, which requires this
-    RPI_KERNEL_DEVICETREE_OVERLAYS:append = " overlays/bcm2712d0.dtbo"
+  # NOTE: bcm2712d0.dtbo is NOT available in the kirkstone-era kernel
+  # (6.1.x). The overlay exists in scarthgap+ kernels only. Kirkstone
+  # RPi5 images will boot without it, but the 2GB D0 variant may lack
+  # full support.
