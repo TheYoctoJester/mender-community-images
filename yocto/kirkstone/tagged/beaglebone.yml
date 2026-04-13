@@ -6,7 +6,7 @@ header:
 repos:
   meta-mender-community:
     url: https://github.com/mendersoftware/meta-mender-community.git
-    commit: b418760a299d2966ed04ab53fac543626435f60c
+    commit: 63161fb195832554b03a09a7f40ba61c4f3b0464
     layers:
       meta-mender-beaglebone:
 
