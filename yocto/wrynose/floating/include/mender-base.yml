@@ -30,8 +30,8 @@ repos:
       meta-oe:
 
   meta-mender:
-    url: https://github.com/theyoctojester/meta-mender.git
-    branch: tyj/wrynose
+    url: https://github.com/mendersoftware/meta-mender.git
+    branch: master-next
 
     layers:
       meta-mender-core:
