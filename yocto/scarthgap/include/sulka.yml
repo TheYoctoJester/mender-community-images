@@ -6,7 +6,7 @@ distro: sulka
 repos:
   meta-sulka-distro:
     url: https://codeberg.org/AltidSec/meta-sulka-distro.git
-    commit: 64c1f5c0d484bd201e7f2f617040e2c5973d17cb
+    commit: f4e1cd41b4b814a574e540c97206a05ee90e02ad
 
   meta-openembedded:
     layers:
@@ -15,7 +15,7 @@ repos:
 
   meta-security:
     url: https://git.yoctoproject.org/meta-security.git
-    commit: bc865c5276c2ab4031229916e8d7c20148dfbac3
+    commit: b13f1705d723650de61277670c8a76aadea4cfdd
 
 local_conf_header:
   sulka: |
