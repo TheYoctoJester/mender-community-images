@@ -1,0 +1,35 @@
+header:
+  version: 14
+  includes:
+  - raspberrypi4-64.yml
+
+target: mender-app-update-image
+
+repos:
+  mender-community-images:
+    layers:
+      yocto/scarthgap/demos/meta-mender-demo-app-updates:
+
+  meta-openembedded:
+    layers:
+      meta-python:
+      meta-networking:
+      meta-filesystems:
+
+  meta-virtualization:
+    url: https://git.yoctoproject.org/meta-virtualization.git
+    branch: scarthgap
+
+  meta-mender:
+    layers:
+      meta-mender-demo:
+
+  meta-mender-community:
+    layers:
+      meta-mender-update-modules:
+
+local_conf_header:
+  app-updates: |
+    MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT = "2048"
+    BBMASK += "meta-virtualization/dynamic-layers/raspberrypi"
+    DISTRO_FEATURES:append = " virtualization"
