@@ -1,0 +1,33 @@
+header:
+  version: 14
+  includes:
+  - raspberrypi4-64.yml
+
+target: mender-explicit-demo-image
+
+repos:
+  mender-community-images:
+    layers:
+      yocto/scarthgap/demos/meta-mender-explicit-wic:
+
+local_conf_header:
+  mender-artifact: |
+    MENDER_ARTIFACT_NAME = "explicit-wic"
+    IMAGE_FSTYPES:prepend = "ext4 "
+
+  mender-explicit-demo: |
+    # Enable essential Mender features for A/B updates (but NOT image generation).
+    MENDER_FEATURES_ENABLE:append = " \
+        mender-uboot \
+        mender-auth-install \
+        mender-update-install \
+        mender-systemd \
+        mender-growfs-data \
+    "
+    MENDER_FEATURES_DISABLE:append = " mender-image mender-part-images"
+
+    PREFERRED_PROVIDER_virtual/bootloader = "u-boot"
+    PREFERRED_PROVIDER_mender-native =  "mender-native"
+    PREFERRED_RPROVIDER_mender-auth =   "mender"
+    PREFERRED_RPROVIDER_mender-update = "mender"
+    PREFERRED_VERSION_mender-artifact-native = "4.%"
