@@ -7,16 +7,16 @@ header:
 repos:
   meta-tegra:
     # refers to the scarthgap branch
-    commit: 8f9748b0178a4d93bceffd86d9d436cd0e685750
+    commit: 891fc9e6d89da207a5496d9d611cf1d8982c1f45
   meta-tegra-community:
     # refers to the scarthgap branch
-    commit: 241d1073ba8e610ef8da3fe8470b0a4d0567521f
+    commit: 7bb9a44281367129a5c21e722f6fa1cf192b0827
   meta-tegrademo:
     # refers to the scarthgap branch
-    commit: 3f2641444d6c50c3fa4eea8a4c770bd30db70ee9
+    commit: 0cc53acdae89c407574f01cf01791412e88ba21a
 
   meta-mender-community:
     url: https://github.com/mendersoftware/meta-mender-community.git
-    commit: 9145b8e34bac23c82984ddcdd5468154ffe7af6d
+    commit: 60045b206d314c5a7eb481f306bde74c1ea16e18
     layers:
       meta-mender-tegra/meta-mender-tegra-jetpack6:
