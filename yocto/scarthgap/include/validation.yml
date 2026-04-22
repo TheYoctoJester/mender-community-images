@@ -4,7 +4,7 @@ header:
 repos:
   meta-mender-community:
     url: https://github.com/mendersoftware/meta-mender-community.git
-    commit: 9145b8e34bac23c82984ddcdd5468154ffe7af6d
+    commit: 1ae2f30a87ad9b8d87df13e88cf688b454461b1d
     layers:
       meta-mender-validation:
 
