@@ -3,7 +3,7 @@ header:
 
 repos:
   meta-mender:
-    commit: 2f70dbad1441055c299332b7ef33dfe1e4f50c1c # this one fixes the persistent-id for now!
+    commit: f7225aefdb89e5979679925f5a97aa3b17086c2b
 
   meta-tegra:
     url: https://github.com/OE4T/meta-tegra.git
@@ -24,11 +24,11 @@ repos:
 
   meta-virtualization:
     url: https://git.yoctoproject.org/meta-virtualization.git
-    commit: 6a80f140e387621f62964209a2e07d3bcfb125ce
+    commit: 3dd635f613f7299d986a8ab6bc9f584370f8ed1d
 
   meta-mender-community:
     url: https://github.com/mendersoftware/meta-mender-community.git
-    commit: 9145b8e34bac23c82984ddcdd5468154ffe7af6d
+    commit: 60045b206d314c5a7eb481f306bde74c1ea16e18
     layers:
       meta-mender-tegra/meta-mender-tegra-common:
 
