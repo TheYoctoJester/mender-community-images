@@ -25,13 +25,13 @@ repos:
 
   meta-openembedded:
     url: https://git.openembedded.org/meta-openembedded
-    commit: 8f5f5cf4b335a09313c48394c62bfb614868fc1e
+    commit: 9d8ef26a9693e2c70ae34abe1a753873d42ec588
     layers:
       meta-oe:
 
   meta-mender:
     url: https://github.com/mendersoftware/meta-mender.git
-    commit: e017c1a6b9ff545ab7db29681a5c443faab85ccd
+    commit: 37629c96367236623d2d966c3946e2a49a9f6c9b
 
     layers:
       meta-mender-core:
