@@ -1,11 +1,13 @@
 # mender-community-images
 
-Build configurations and scripts for Mender-enabled images.
+Build configurations for Mender-enabled images, covering both Yocto/kas and mender-convert workflows.
 
 ## Overview
 
-This repository contains kas build configurations for various boards with Mender OTA update support.
-The configurations are organized by Yocto release version and pinning strategy.
+This repository contains two parallel configuration trees with a shared `tagged/` vs `floating/` pinning convention:
+
+- `yocto/` — kas build configurations for various boards with Mender OTA update support, organised by Yocto release version.
+- `mender-convert/` — mender-convert configuration fragments for converting upstream disk images (Raspberry Pi OS, Debian, etc.) into Mender-compatible images.
 
 ## Directory Structure
 
@@ -39,12 +41,24 @@ yocto/
     └── floating/                   # Branch-based versions
         ├── include/                # Floating include files
         └── (same structure as tagged/)
+
+mender-convert/
+├── include/                        # Sourceable shell fragments shared across configs
+├── tagged/                         # Configs mirrored from upstream mender-convert at the pinned tag
+│   ├── raspberrypi/*_config
+│   └── qemu-x86-64/*_config
+├── floating/                       # Same layout; mirrored from upstream master
+└── validation/
+    ├── tagged/                     # Validation-only variants, pinned
+    └── floating/                   # Validation-only variants, master-tracking
 ```
 
 ## Tagged vs Floating
 
-- **tagged/**: All repositories are pinned to specific commits. Use this for reproducible builds.
-- **floating/**: Repositories track branch heads. Use this for development or to pick up latest fixes.
+- **tagged/**: In `yocto/`, all layer repositories are pinned to specific commits — use this for reproducible kas builds. In `mender-convert/`, configs are copied from the upstream mender-convert tag that the consuming workflow pins (currently `5.2.1`).
+- **floating/**: In `yocto/`, repositories track branch heads. In `mender-convert/`, configs mirror upstream `master` and may pick up upstream changes sooner.
+
+See [mender-convert/README.md](mender-convert/README.md) for the mender-convert-specific conventions, including the shadowing rules.
 
 ## Usage
 
@@ -77,6 +91,19 @@ You can combine configs with your own local overrides:
 ```bash
 kas build yocto/scarthgap/tagged/raspberrypi4-64.yml:my-local-config.yml
 ```
+
+### Using a mender-convert configuration
+
+mender-convert consumes a single shell-fragment config. The configs under `mender-convert/` are designed to be referenced by the `build-mender-convert` workflows in the `mender-integration-builds` repository (via `build-configs.json`), but they can also be used directly against a local mender-convert checkout:
+
+```bash
+# from a mender-convert checkout
+./mender-convert --disk-image input/raspios-bookworm-arm64-lite.img \
+  --config /path/to/mender-community-images/mender-convert/tagged/raspberrypi/raspberrypi4_bookworm_64bit_config \
+  --overlay input/rootfs_overlay_hosted
+```
+
+See [mender-convert/README.md](mender-convert/README.md) for the contribution flow.
 
 ## Supported Boards
 
