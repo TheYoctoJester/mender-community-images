@@ -6,32 +6,32 @@ distro: poky
 repos:
   openembedded-core:
     url: https://git.openembedded.org/openembedded-core.git
-    commit: 95888aa944847cf6dbfac501997a3e2980344b66
+    commit: 52380df998b3a8fe6a091f8547434a3231320a8e
     layers:
       meta:
 
   bitbake:
     url: https://git.openembedded.org/bitbake.git
-    commit: b00f85cf00dd3a5c1858b409b831194edf148659
+    commit: d3b4c352dd33fca90cd31649eda054b884478739
     layers:
       bitbake: disabled
 
   meta-yocto:
     url: https://git.yoctoproject.org/git/meta-yocto.git
-    commit: 82602cda1a89644d1acbe230a81c93e3fb5031c8
+    commit: c7c38663a1cafb1fa8593c0b246811e51d3bbe20
     layers:
       meta-poky:
       meta-yocto-bsp:
 
   meta-openembedded:
     url: https://git.openembedded.org/meta-openembedded
-    commit: e621da947048842109db1b4fd3917a02e0501aa2
+    commit: 5124ac4a658899158f4a7a2ddf1d2ca931ec7d0e
     layers:
       meta-oe:
 
   meta-mender:
     url: https://github.com/mendersoftware/meta-mender.git
-    commit: 4ae8e962a3c011cfc4d9e4b85878c226b2763b0c
+    commit: f7225aefdb89e5979679925f5a97aa3b17086c2b
 
     layers:
       meta-mender-core:
