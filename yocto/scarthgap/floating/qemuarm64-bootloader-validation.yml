@@ -1,0 +1,14 @@
+header:
+  version: 14
+  includes:
+  - qemuarm64.yml
+
+repos:
+  meta-mender-community:
+    layers:
+      meta-mender-validation:
+
+local_conf_header:
+  bootloader-validation: |
+    MENDER_FEATURES_ENABLE:append = " mender-prepopulate-inactive-partition"
+    IMAGE_INSTALL:append = " bootloader-validation"
