@@ -5,11 +5,11 @@ repos:
   meta-freescale:
     url: https://github.com/Freescale/meta-freescale.git
     # branch: scarthgap
-    commit: f52fe2b709e70d1d864adfad2754213bce7abcd7
+    commit: 0c27c21cab57876474bb572e5d378b6707e41224
   meta-freescale-3rdparty:
     url: https://github.com/Freescale/meta-freescale-3rdparty.git
     # branch: scarthgap
-    commit: 70c83e96c7f75e73245cb77f1b0cada9ed4bbc6d
+    commit: ce10c065119c2d4e359235c77aae7e0d843533ef
   meta-freescale-distro:
     url: https://github.com/Freescale/meta-freescale-distro.git
     # branch: scarthgap
@@ -17,7 +17,7 @@ repos:
 
   meta-mender-community:
     url: https://github.com/mendersoftware/meta-mender-community.git
-    commit: 9145b8e34bac23c82984ddcdd5468154ffe7af6d
+    commit: 60045b206d314c5a7eb481f306bde74c1ea16e18
     layers:
       meta-mender-nxp:
 
