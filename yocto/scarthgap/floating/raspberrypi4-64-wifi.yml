@@ -1,0 +1,21 @@
+header:
+  version: 14
+  includes:
+  - raspberrypi4-64.yml
+
+target: core-image-raspberrypi-wifi
+
+repos:
+  mender-community-images:
+    layers:
+      yocto/scarthgap/demos/meta-mender-raspberrypi-wifi:
+
+  meta-mender-community:
+    layers:
+      meta-mender-update-modules:
+
+local_conf_header:
+  wifi: |
+    DEMO_WIFI_SSID = "Demo_SSID"
+    DEMO_WIFI_PASSKEY = "Demo_Password"
+    LICENSE_FLAGS_ACCEPTED = "synaptics-killswitch"
