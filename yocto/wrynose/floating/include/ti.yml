@@ -4,6 +4,7 @@ header:
 repos:
   meta-ti:
     url: https://git.yoctoproject.org/meta-ti
-    branch: master
+    branch: wrynose
     layers:
       meta-ti-bsp:
+      meta-beagle:
