@@ -1,0 +1,36 @@
+header:
+  version: 14
+  includes:
+  - include/mender-full.yml
+  - include/arm.yml
+  - include/ti.yml
+
+repos:
+  meta-mender-community:
+    url: https://github.com/theyoctojester/meta-mender-community.git
+    branch: wrynose-initial
+    layers:
+      meta-mender-beagle:
+
+machine: beagleplay-ti
+
+local_conf_header:
+  beagleplay: |
+    MENDER_FEATURES_ENABLE:append = " mender-image-sd"
+    MENDER_FEATURES_DISABLE:append = "mender-image-uefi"
+    MENDER_STORAGE_DEVICE = "/dev/mmcblk1"
+    MENDER_BOOT_PART_SIZE_MB = "128"
+    MENDER_PARTITION_ALIGNMENT = "1048576"
+    # core-image-base + systemd + Mender rootfs is ~840 MB. The default
+    # MENDER_STORAGE_TOTAL_SIZE_MB only allows ~380 MB per A/B partition and
+    # trips do_image_mender. Bump for ~1.8 GB per slot on an 8 GB SD.
+    MENDER_STORAGE_TOTAL_SIZE_MB = "4096"
+    IMAGE_FSTYPES:remove = "wic wic.bmap mender.bmap sdimg.bmap"
+
+  ti-bsp-pin: |
+    # The wrynose-tip ti-6_18 linux-ti-staging has a davinci_mdio probe
+    # regression on AM62X that keeps the BeaglePlay's RGMII PHY from being
+    # detected. Pin to the ti-6_12 LTS BSP until that lands.
+    TI_PREFERRED_BSP = "ti-6_12"
+    PREFERRED_VERSION_linux-ti-staging = "6.12%"
+    PREFERRED_VERSION_u-boot-ti-staging = "2025.01%"
