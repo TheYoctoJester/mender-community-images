@@ -8,7 +8,7 @@ header:
 repos:
   meta-mender-community:
     url: https://github.com/theyoctojester/meta-mender-community.git
-    branch: wrynose-initial
+    branch: wrynose-bp
     layers:
       meta-mender-beagle:
 
