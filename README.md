@@ -132,13 +132,15 @@ The authoritative list is the contents of `yocto/<release>/{tagged,floating}/`. 
 
 ### Wrynose (floating only)
 
-Initial port: the same `qemu{arm64,x86-64}`, RPi {3-64,4-64,5,ARMv8}, and BeagleBone {Black, U-Boot} as kirkstone.
+One of the two maintained LTS tiers alongside scarthgap. Same board set as kirkstone — `qemu{arm64,x86-64}`, RPi {3-64,4-64,5,ARMv8}, BeagleBone {Black, U-Boot} — plus BeaglePlay (TI AM625). Floating-only: a `tagged/` tier will be added once upstream cuts wrynose branches for `meta-mender` and `meta-raspberrypi` (neither has one yet).
 
 ## Layer pinning
 
 Tagged include files under `yocto/<release>/include/` are the source of truth for layer revisions. They are bumped periodically to track upstream point releases (for example, yocto-5.0.17 / meta-mender scarthgap-v2026.04 / kirkstone-4.0.33 / meta-mender kirkstone-v2025.11 were the current pins at the time of the last bump). `git log yocto/<release>/include/` shows the history.
 
 Floating builds do not pin layers; they take whatever is at branch tip when the build runs. The corresponding pins are still present in `yocto/<release>/floating/include/` but use `branch:` rather than `commit:`.
+
+Wrynose's floating includes deliberately reference `bitbake: master`, `meta-mender: master-next`, and `meta-raspberrypi: master` (see `yocto/wrynose/floating/include/mender-base.yml` and the per-board kas files). Upstream has not cut a `wrynose` branch for any of these three; `bitbake` uses numbered release branches that have not yet been opened for the wrynose-era release. Do not "fix" those pins to a wrynose branch name — they will be flipped to release refs once the corresponding upstream branches exist.
 
 ## CI
 
