@@ -8,6 +8,6 @@ repos:
     url: https://github.com/mendersoftware/meta-mender-community.git
     branch: wrynose
     layers:
-      meta-mender-beaglebone:
+      meta-mender-beagle:
 
 machine: beaglebone-yocto
