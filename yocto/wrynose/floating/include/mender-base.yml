@@ -29,9 +29,14 @@ repos:
     layers:
       meta-oe:
 
+  # Downstream workaround: master-next f81cb860 has an incomplete WORKDIR ->
+  # UNPACKDIR migration in mender-client-cpp.inc that breaks mender-5.1.0
+  # do_install on every wrynose floating board. The fork carries a single-
+  # commit fix on top of upstream master-next; drop this override once
+  # mendersoftware/meta-mender master-next picks up the fix.
   meta-mender:
-    url: https://github.com/mendersoftware/meta-mender.git
-    branch: master-next
+    url: https://github.com/TheYoctoJester/meta-mender.git
+    branch: fix/wrynose-mender-client-cpp-unpackdir
 
     layers:
       meta-mender-core:
