@@ -60,6 +60,9 @@ See [mender-convert/README.md](mender-convert/README.md) for mender-convert-spec
 
 - **scarthgap** — `raspberrypi4-64-{app-updates,mender-explicit-wic,tpm,wifi}.yml`, `qemuarm64-{bootloader-validation,client-only,sulka}.yml`
 - **kirkstone** — `qemuarm64-swupdate.yml`
+- **wrynose** — `qemuarm64-uki.yml` (UKI + Mender), `qemuarm64-rauc.yml` (RAUC as the on-device updater, managed from the Mender server via a custom Update Module)
+
+The `qemuarm64-rauc.yml` demo's layer (`meta-mender-rauc`) lives in `meta-mender-community` (branch `wrynose-demos`), not in this repo's `demos/`; the wrapper references it there. It composes `meta-rauc` + `rauc/meta-rauc-community`'s `meta-rauc-qemuarm` (the A/B machine) with the Mender client.
 
 Demos are covered by the monthly Forgejo `build-yocto-<release>-floating-extended` workflows in `mender-integration-builds`; they are not yet promoted to `tagged/`.
 

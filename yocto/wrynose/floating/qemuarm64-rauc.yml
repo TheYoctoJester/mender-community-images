@@ -1,0 +1,100 @@
+header:
+  version: 14
+  includes:
+  - include/mender-base.yml
+
+# Manage a RAUC-updated A/B system from the Mender server, on qemuarm64
+# (wrynose). RAUC stays the on-device updater; the Mender client runs in
+# client-only mode and a custom "rauc" Update Module installs a RAUC bundle
+# (.raucb) delivered inside a Mender artifact. See the meta-mender-rauc layer
+# README in meta-mender-community at branch wrynose-demos for the design and
+# the two runtime quirks (/var/lib/mender -> /data bind mount, u-boot-env /
+# fw_env.config).
+#
+# Why this is a separate file (not amended onto qemuarm64.yml):
+#   - the A/B machine is rauc/meta-rauc-community's meta-rauc-qemuarm (plain
+#     qemuarm64 + u-boot bootscript + pflash bootenv), not meta-mender's own
+#     EFI/grub qemu integration; RAUC owns the rootfs, so mender-full is off.
+#
+# Server URL and tenant token are intentionally not committed; provide them in
+# a local override to connect to your Mender server, e.g.:
+#   MENDER_SERVER_URL = "https://hosted.mender.io"
+#   MENDER_TENANT_TOKEN = "<your token>"
+
+machine: qemuarm64
+
+repos:
+  # RAUC core (recipes for the rauc daemon, bundle/image classes). The layer is
+  # the repo root, so no layers: subkey.
+  meta-rauc:
+    url: https://github.com/rauc/meta-rauc.git
+    branch: wrynose
+
+  # The RAUC A/B demo machine: slots, update-bundle recipe, u-boot bootscript,
+  # system.conf, wks. Only has a master branch and does not yet declare wrynose
+  # compatibility (see the compat force in bblayers_conf_header below).
+  meta-rauc-community:
+    url: https://github.com/rauc/meta-rauc-community.git
+    branch: master
+    layers:
+      meta-rauc-qemuarm:
+
+  # The Mender client (client-only) + the RAUC<->Mender glue.
+  meta-mender-community:
+    url: https://github.com/theyoctojester/meta-mender-community.git
+    branch: wrynose-demos
+    layers:
+      meta-mender-client-only:
+      meta-mender-rauc:
+
+bblayers_conf_header:
+  rauc-compat: |
+    # meta-rauc-qemuarm declares "styhead walnascar whinlatter" only. Forcing
+    # compat must happen in bblayers.conf (not local.conf): the LAYERSERIES
+    # check runs during the layer.conf parsing loop, which sees bblayers.conf
+    # but not local.conf (a postfile). An :append survives the layer's own
+    # hard assignment.
+    LAYERSERIES_COMPAT_meta-rauc-qemuarm:append = " wrynose"
+
+local_conf_header:
+  rauc-machine: |
+    # RAUC A/B machine config (from meta-rauc-qemuarm's kas-qemuarm.yml).
+    PREFERRED_PROVIDER_virtual/bootloader = "u-boot"
+    PREFERRED_RPROVIDER_u-boot-default-env = "libubootenv"
+    DISTRO_FEATURES:append = " rauc"
+    INIT_MANAGER = "systemd"
+
+    QB_DEFAULT_BIOS:qemuarm64 = "u-boot.bin"
+    QB_ROOTFS_OPT:qemuarm64 = "-drive id=disk0,file=@ROOTFS@,if=none,format=qcow2 -device virtio-blk-device,drive=disk0"
+    QB_OPT_APPEND:qemuarm64 += " -drive if=pflash,format=raw,index=1,file=${TMPDIR}/deploy/images/${MACHINE}/bootenv.img"
+    QB_MEM:qemuarm64 = "-m 3G"
+
+    EXTRA_IMAGE_FEATURES += "allow-empty-password allow-root-login empty-root-password"
+    EXTRA_IMAGE_FEATURES += "ssh-server-openssh"
+
+  rauc-mender: |
+    # Mender client (client-only) + the RAUC<->Mender glue. meta-mender-client-only
+    # sets device_type = MACHINE (qemuarm64); RAUC owns the A/B rootfs so none of
+    # mender's own image/bootloader features are enabled.
+    IMAGE_INSTALL:append = " mender-auth mender-update"
+    IMAGE_INSTALL:append = " rauc rauc-update-module mender-rauc-data"
+
+    # Restore /etc/fw_env.config: meta-mender's libubootenv bbappend RPROVIDES
+    # u-boot-default-env, which otherwise drops the u-boot-env package and breaks
+    # RAUC's u-boot env access.
+    IMAGE_INSTALL:append = " u-boot-env"
+
+    # meta-mender's version-inventory-script (6.0.0) fails do_package QA on
+    # wrynose: it installs /usr/share/mender/inventory/mender-inventory-client-version
+    # but does not ship it. It only reports the mender_client_version inventory
+    # attribute and is not needed here; drop it from the client PACKAGECONFIG.
+    PACKAGECONFIG:remove:pn-mender = "version-inventory-script version-inventory-script-strict"
+
+    # Bump between releases (release-1 -> release-2 ...) so deployments on the
+    # Mender server are meaningful.
+    MENDER_ARTIFACT_NAME = "rauc-qemuarm64-1"
+
+target:
+  - core-image-minimal
+  - update-bundle
+  - update-bundle-mender
