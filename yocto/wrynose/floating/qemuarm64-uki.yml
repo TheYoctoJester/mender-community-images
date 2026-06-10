@@ -1,0 +1,80 @@
+header:
+  version: 14
+  includes:
+  - include/mender-full.yml
+  - include/arm.yml
+
+# Mender + UKI demo on qemuarm64-secureboot (wrynose). End-to-end verified
+# against hosted.mender.io: release-1 deploys to slot A, OTA to release-2
+# lands on slot B, server reports Success. See the layer README in
+# meta-mender-community at branch wrynose-demos for the design rationale
+# and the four runtime quirks (canary pre-seed, fw_setenv -s batch mode,
+# /var/lib/mender -> /data/mender bind mount, ESP sizing).
+#
+# Why this is a separate file (not amended onto qemuarm64.yml):
+#   - machine differs (qemuarm64-secureboot from meta-arm vs plain
+#     qemuarm64), and the boot chain is TF-A -> U-Boot UEFI ->
+#     systemd-boot -> UKI rather than OVMF -> grub-efi.
+#   - meta-mender's mender-image-systemd-boot.bbclass still inherits
+#     uefi-comboapp (meta-intel legacy) which does not compose with
+#     oe-core's uki.bbclass; meta-mender-uki replaces that pathway
+#     without touching meta-mender itself.
+
+machine: qemuarm64-secureboot
+
+repos:
+  meta-mender-community:
+    url: https://github.com/theyoctojester/meta-mender-community.git
+    branch: wrynose-demos
+    layers:
+      meta-mender-uki:
+
+local_conf_header:
+  uki: |
+    EFI_PROVIDER = "systemd-boot"
+    MACHINE_FEATURES:append = " efi"
+    INITRAMFS_IMAGE = "core-image-minimal-initramfs"
+
+    # uki-mender-ab.bbclass inherits the upstream uki class and adds the
+    # slot-B build + rootfs staging. Do NOT also append " uki" to
+    # IMAGE_CLASSES (would double-add the parent class).
+    IMAGE_CLASSES:append:pn-core-image-minimal = " uki-mender-ab"
+
+    QB_KERNEL_ROOT = ""
+    QB_DEFAULT_KERNEL = "none"
+    QEMU_USE_KVM = ""
+
+  mender: |
+    DISTRO_FEATURES:append = " systemd"
+
+    # No stock bootloader integration -- mender-uki-shim provides
+    # fw_setenv/fw_printenv. mender-image / mender-part-images are off
+    # so the explicit wks in meta-mender-uki/files/wic/ owns the layout.
+    MENDER_FEATURES_DISABLE:append = " mender-grub mender-uboot mender-systemd-boot mender-image mender-part-images mender-image-uefi mender-growfs-data"
+    MENDER_FEATURES_ENABLE:append  = " mender-auth-install mender-update-install mender-systemd"
+
+    IMAGE_INSTALL:append = " mender-uki-shim"
+
+    # WKS file resolved via the default WKS_SEARCH_PATH (which includes
+    # each layer's files/wic/ via BBPATH); see image_types_wic.bbclass.
+    WKS_FILE = "efi-uki-mender-bootdisk.wks.in"
+    IMAGE_FSTYPES:pn-core-image-minimal:append = " wic mender"
+
+    # Bump MENDER_ARTIFACT_NAME between builds (release-1 -> release-2 ...)
+    # so deployments on hosted.mender.io are meaningful.
+    MENDER_DEVICE_TYPES_COMPATIBLE = "qemuarm64-secureboot"
+    MENDER_ARTIFACT_NAME = "release-1"
+
+    # Runtime device paths read by mender-client. qemuarm64-secureboot's
+    # rootfs lives on /dev/vda (virtio).
+    MENDER_STORAGE_DEVICE = "/dev/vda"
+    MENDER_BOOT_PART      = "/dev/vda1"
+    MENDER_ROOTFS_PART_A  = "/dev/vda2"
+    MENDER_ROOTFS_PART_B  = "/dev/vda3"
+    MENDER_DATA_PART      = "/dev/vda4"
+
+    # Informational - mender-part-images is off; the wks fixes the
+    # layout. These still feed into mender-client config templates.
+    MENDER_BOOT_PART_SIZE_MB    = "256"
+    MENDER_DATA_PART_SIZE_MB    = "128"
+    MENDER_STORAGE_TOTAL_SIZE_MB = "2048"
