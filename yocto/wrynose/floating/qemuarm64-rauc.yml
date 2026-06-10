@@ -79,6 +79,11 @@ local_conf_header:
     IMAGE_INSTALL:append = " mender-auth mender-update"
     IMAGE_INSTALL:append = " rauc rauc-update-module mender-rauc-data"
 
+    # Report RAUC status (installed bundle versions, slot/boot state) as Mender
+    # device inventory. meta-mender-rauc's mender bbappend also drops the stock
+    # rootfs-image Update Module (conflicts with RAUC owning the rootfs A/B).
+    IMAGE_INSTALL:append = " rauc-inventory"
+
     # Restore /etc/fw_env.config: meta-mender's libubootenv bbappend RPROVIDES
     # u-boot-default-env, which otherwise drops the u-boot-env package and breaks
     # RAUC's u-boot env access.
