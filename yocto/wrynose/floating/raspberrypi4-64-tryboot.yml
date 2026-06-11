@@ -1,0 +1,7 @@
+header:
+  version: 14
+  includes:
+  - include/mender-base.yml
+  - include/raspberrypi-tryboot.yml
+
+machine: raspberrypi4-64

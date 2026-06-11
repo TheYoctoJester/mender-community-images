@@ -1,0 +1,115 @@
+header:
+  version: 14
+  includes:
+  - include/mender-base.yml
+
+# Boot U-Boot as an EFI application under OVMF on qemux86-64 (wrynose), for a
+# GPLv3-free A/B boot chain managed by the Mender server:
+#
+#   QEMU -> OVMF (UEFI) -> u-boot-app.efi (from ESP) -> Linux kernel
+#
+# A 5-partition GPT layout puts the U-Boot environment on its own FAT
+# partition, separate from the ESP, so env writes never corrupt the ESP FAT
+# that OVMF uses for boot discovery. See the meta-mender-x86-uboot-efi layer
+# README in meta-mender-community at branch wrynose-demos for the design, the
+# u-boot 2026.01 defconfig patch and the manual QEMU/OVMF run command (runqemu
+# cannot drive this setup).
+#
+# Server URL and tenant token are intentionally not committed; provide them in
+# a local override to connect to your Mender server, e.g.:
+#   MENDER_SERVER_URL = "https://hosted.mender.io"
+#   MENDER_TENANT_TOKEN = "<your token>"
+
+machine: qemux86-64
+
+repos:
+  # The explicit-WIC demo image (mender-explicit-demo-image, the build target)
+  # plus the x86 U-Boot EFI integration (u-boot EFI-app defconfig patch, env
+  # partition generation, ESP boot entry).
+  meta-mender-community:
+    url: https://github.com/theyoctojester/meta-mender-community.git
+    branch: wrynose-demos
+    layers:
+      meta-mender-explicit-wic:
+      meta-mender-x86-uboot-efi:
+
+local_conf_header:
+  mender-artifact: |
+    MENDER_ARTIFACT_NAME = "x86-uboot-efi-demo"
+    IMAGE_FSTYPES:prepend = "ext4 "
+
+  uboot-efi: |
+    # U-Boot as EFI application (replaces GRUB for a GPLv3-free boot chain)
+    PREFERRED_PROVIDER_virtual/bootloader = "u-boot"
+    UBOOT_MACHINE = "efi-x86_app64_defconfig"
+    MENDER_UBOOT_AUTO_CONFIGURE = "0"
+
+    # ESP gets ONLY the EFI binary and startup.nsh -- NO env files. Env lives
+    # on a separate FAT partition (part 2) to prevent writes from corrupting
+    # the ESP FAT for OVMF.
+    IMAGE_BOOT_FILES = "u-boot-app.efi;EFI/BOOT/bootx64.efi startup.nsh"
+
+    # EFI/UEFI platform configuration
+    MACHINE_FEATURES += "efi"
+    MENDER_EFI_LOADER = ""
+
+  qemu: |
+    # SATA/AHCI storage -- virtio devices are NOT re-enumerated by OVMF after
+    # a guest reboot in QEMU, breaking the boot chain.
+    MENDER_STORAGE_DEVICE = "/dev/sda"
+    MENDER_BOOT_PART = "/dev/sda2"
+    MENDER_ROOTFS_PART_A = "/dev/sda3"
+    MENDER_ROOTFS_PART_B = "/dev/sda4"
+    MENDER_DATA_PART = "/dev/sda5"
+    QB_MEM = "-m 2048"
+    QB_DEFAULT_FSTYPE = "wic"
+    QB_DEFAULT_BIOS = "ovmf.qcow2"
+    QB_ROOTFS_OPT = ""
+    QB_DEFAULT_KERNEL = "none"
+    QB_DRIVE_TYPE = "/dev/sd"
+    QB_KERNEL_ROOT = "/dev/sda3"
+
+  mender: |
+    # Mender A/B update features -- set globally (local.conf) so that recipes
+    # like mender-connect also see them, not only the image recipe which
+    # inherits mender-explicit-wic.
+    MENDER_FEATURES_ENABLE:append = " \
+        mender-uboot \
+        mender-auth-install \
+        mender-update-install \
+        mender-systemd \
+    "
+    MENDER_FEATURES_DISABLE:append = " \
+        mender-image \
+        mender-part-images \
+        mender-growfs-data \
+        mender-grub \
+    "
+
+    PREFERRED_PROVIDER_mender-native =  "mender-native"
+    PREFERRED_RPROVIDER_mender-auth =   "mender"
+    PREFERRED_RPROVIDER_mender-update = "mender"
+    PREFERRED_VERSION_mender-artifact-native = "4.%"
+
+  x86-uboot-efi: |
+    # In EFI app mode, block devices use the "efi" interface
+    MENDER_UBOOT_STORAGE_INTERFACE = "efi"
+    MENDER_UBOOT_STORAGE_DEVICE = "0"
+    BOOTENV_SIZE = "0x20000"
+
+    # x86 does not use device trees
+    MENDER_DTB_NAME_FORCE = "none"
+
+    # WKS search path: include our layer's wic/ directory
+    WKS_SEARCH_PATH:prepend = "${LAYERDIR_meta-mender-x86-uboot-efi}/wic:"
+
+    IMAGE_INSTALL:append = " x86-uboot-efi-env efibootmgr"
+    # Persist Mender state on /data so the post-reboot ArtifactCommit survives
+    # the A/B rootfs swap (mender-explicit-wic disables mender-image, which
+    # would otherwise relocate /var/lib/mender to the data partition).
+    IMAGE_INSTALL:append = " mender-x86-efi-data"
+    IMAGE_INSTALL:remove = "kernel-devicetree"
+    EXTRA_IMAGEDEPENDS += "ovmf"
+
+target:
+  - mender-explicit-demo-image

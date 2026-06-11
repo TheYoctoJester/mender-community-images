@@ -1,0 +1,64 @@
+header:
+  version: 14
+
+# Raspberry Pi native tryboot A/B managed by the Mender server, on wrynose.
+# Tryboot is the RPi firmware's own A/B mechanism (autoboot.txt + a tryboot
+# partition), so there is no U-Boot: the Mender client runs in a minimal
+# setup and a custom "rpi-tryboot-rootfs" Update Module performs the A/B
+# rootfs switch. See the meta-mender-raspberrypi-tryboot layer README in
+# meta-mender-community at branch wrynose-demos.
+#
+# This is the shared base for the per-board tryboot configs
+# (raspberrypi4-64-tryboot.yml, raspberrypi5-tryboot.yml).
+#
+# Server URL and tenant token are intentionally not committed; provide them in
+# a local override to connect to your Mender server, e.g.:
+#   MENDER_SERVER_URL = "https://hosted.mender.io"
+#   MENDER_TENANT_TOKEN = "<your token>"
+
+repos:
+  # agherzan's BSP; no wrynose branch exists yet, track master (same as the
+  # other wrynose raspberrypi configs).
+  meta-raspberrypi:
+    url: https://github.com/agherzan/meta-raspberrypi.git
+    branch: master
+
+  # The tryboot layer (Update Module, tryboot WKS + wic plugin, data partition
+  # and wait-for-clock glue).
+  meta-mender-community:
+    url: https://github.com/theyoctojester/meta-mender-community.git
+    branch: wrynose-demos
+    layers:
+      meta-mender-raspberrypi-tryboot:
+
+local_conf_header:
+  raspberrypi-tryboot: |
+    # Tryboot: native RPi firmware A/B, no U-Boot
+    RPI_USE_U_BOOT = "0"
+    ENABLE_UART = "1"
+    IMAGE_FSTYPES = "wic ext4"
+    WKS_FILE = "sdimage-rpi-mender-tryboot.wks"
+    # wrynose's default WKS_SEARCH_PATH only searches <layer>/files/wic; the
+    # tryboot WKS ships in the layer's wic/ dir, so add it explicitly.
+    WKS_SEARCH_PATH:prepend = "${LAYERDIR_mender-raspberrypi-tryboot}/wic:"
+
+    # Mender client without bootloader integration. tryboot-cmdline
+    # post-processes the WIC to set per-partition root= in cmdline.txt.
+    INHERIT += "mender-setup tryboot-cmdline"
+    MENDER_FEATURES_ENABLE:append = " mender-auth-install mender-update-install mender-systemd"
+
+    # Partition layout (7-partition tryboot WKS)
+    MENDER_STORAGE_DEVICE = "/dev/mmcblk0"
+    MENDER_ROOTFS_PART_A = "/dev/mmcblk0p5"
+    MENDER_ROOTFS_PART_B = "/dev/mmcblk0p6"
+    MENDER_DATA_PART = "/dev/mmcblk0p7"
+
+    # Suppress Mender's default /boot/efi fstab entry: the tryboot WKS has its
+    # own partition layout (p1=tryboot, p2=bootA, p3=bootB) and wic generates
+    # the correct fstab entries from the WKS mountpoints.
+    MENDER_BOOT_PART_SIZE_MB = "0"
+    MENDER_BOOT_PART = ""
+
+    # Boot files in rootfs for the update module to extract
+    IMAGE_INSTALL:append = " kernel-image kernel-devicetree"
+    IMAGE_INSTALL:append = " rpi-tryboot-rootfs data-partition wait-for-clock"
