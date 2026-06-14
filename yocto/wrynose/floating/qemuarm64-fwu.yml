@@ -1,0 +1,116 @@
+header:
+  version: 14
+  includes:
+  - include/mender-full.yml
+  - include/arm.yml
+
+# Mender + U-Boot FWU Multi Bank Update demo on qemuarm64-secureboot
+# (wrynose). End-to-end verified against hosted.mender.io: fwu-wrynose-v1
+# deploys to bank 0, OTA to fwu-wrynose-v2 lands on bank 1 via U-Boot's
+# capsule-on-disk path, server reports Success. See the layer README in
+# meta-mender-community at branch wrynose-demos for the design rationale
+# and the four runtime quirks (EFI BootOrder provisioning, FWU V1
+# per-image accept, /data/mender persistence, mkeficapsule already shipped
+# by u-boot-tools on wrynose).
+#
+# Why this is a separate file (not amended onto qemuarm64.yml or
+# qemuarm64-uki.yml):
+#   - machine differs (qemuarm64-secureboot from meta-arm vs plain
+#     qemuarm64), and the boot chain is TF-A -> U-Boot 2026.01 with
+#     FWU patches -> bootefi rather than OVMF -> grub-efi.
+#   - the A/B substrate is U-Boot FWU metadata (two GPT partitions,
+#     versioned struct, FMP capsules), not mender's fw_setenv-based
+#     mender-uboot path. meta-mender-fwu disables mender-uboot and
+#     provides the FWU plumbing instead.
+
+machine: qemuarm64-secureboot
+
+repos:
+  meta-mender-community:
+    url: https://github.com/theyoctojester/meta-mender-community.git
+    branch: wrynose-demos
+    layers:
+      meta-mender-fwu:
+
+local_conf_header:
+  fwu: |
+    # qemuarm64-secureboot platform tuning -- qemu virt has only
+    # virtio-blk, no MMC. meta-mender's auto-derivation knows
+    # /dev/mmcblk* paths only, so point it at virtio explicitly.
+    MENDER_STORAGE_DEVICE = "/dev/vda"
+    MENDER_STORAGE_DEVICE_BASE = "/dev/vda"
+    MENDER_UBOOT_STORAGE_INTERFACE = "virtio"
+    MENDER_UBOOT_STORAGE_DEVICE = "0"
+
+    # qemuarm64-secureboot uses the device tree QEMU supplies at
+    # runtime; no kernel DTB is built or deployed. meta-mender bails
+    # when KERNEL_DEVICETREE is empty -- force a placeholder.
+    MENDER_DTB_NAME_FORCE = "qemu.dtb"
+
+    # MENDER_EFI_LOADER defaults to "u-boot" on aarch64 (see mender-
+    # setup-grub.inc), which makes mender-setup-image.inc add
+    # kernel-devicetree to MACHINE_ESSENTIAL_EXTRA_RDEPENDS. We have no
+    # such package (DTB comes from QEMU at runtime via U-Boot's bootefi
+    # handoff). Clearing the variable drops both that rdep and the
+    # unused ${MENDER_EFI_LOADER}:do_deploy hook in
+    # mender-part-images.bbclass.
+    MENDER_EFI_LOADER = ""
+
+    # qemu_arm64_defconfig sets CONFIG_ENV_SIZE=0x40000; meta-mender
+    # defaults BOOTENV_SIZE to 0x20000 and bails on mismatch.
+    BOOTENV_SIZE = "0x40000"
+
+    # mender's auto-configure runs gcc on the host to build env-tools.
+    # Strip -fcanon-prefix-map (gcc 14+) so a host gcc 11 (Ubuntu 22.04)
+    # does not choke.
+    DEBUG_PREFIX_MAP:remove = "-fcanon-prefix-map"
+
+  mender: |
+    DISTRO_FEATURES:append = " systemd"
+    INIT_MANAGER = "systemd"
+
+    # mender-uboot would wire mender's stock A/B env-based switch into
+    # U-Boot; we replace that with U-Boot FWU (active_index in versioned
+    # metadata on its own GPT partitions, accept via yafwumdata).
+    # Disabling drops meta-mender's auto-patching of U-Boot.
+    MENDER_FEATURES_DISABLE:append = " mender-uboot"
+
+    # mender-systemd: ship the canonical mender-authd.service /
+    # mender-updated.service / mender-connect.service systemd units and
+    # let SYSTEMD_AUTO_ENABLE pull them into multi-user.target.
+    # mender-image: lay out /var/lib/mender as a symlink to /data/mender
+    # and stash device_type + mender.conf inside /data/mender. The wic
+    # file then pre-populates the data partition with the rootfs's
+    # /data tree, so /data/mender/device_type arrives pre-seeded.
+    # mender-update-install: pull the mender-update package into the
+    # image.
+    MENDER_FEATURES_ENABLE:append = " mender-systemd mender-image mender-update-install"
+
+    # Disambiguate mender's provider when more than one is on offer.
+    PREFERRED_RPROVIDER_mender = "mender"
+    PREFERRED_PROVIDER_mender = "mender"
+
+    # Point meta-mender's fstab generator at the GPT label of our data
+    # partition rather than the auto-derived /dev/vda4 (which in our FWU
+    # layout is bank0-kernel, a raw partition with no fs -- under
+    # systemd the wrong mount brings down local-fs.target).
+    MENDER_DATA_PART = "/dev/disk/by-partlabel/data"
+
+    MENDER_DEVICE_TYPES_COMPATIBLE = "qemuarm64-secureboot"
+
+    # Baked-in artifact name. Bump between builds (fwu-wrynose-v1 ->
+    # fwu-wrynose-v2 ...) so deployments on hosted.mender.io are
+    # meaningful. The companion make-artifact.sh in the NOTE.txt for
+    # this build derives the capsule version from the trailing digit.
+    MENDER_ARTIFACT_NAME = "fwu-wrynose-v1"
+
+    # WKS resolved via the default WKS_SEARCH_PATH (which includes each
+    # layer's files/wic/ via BBPATH); see image_types_wic.bbclass.
+    # Image is core-image-fwu-test, which sets WKS_FILE itself, but
+    # restating the deploy expectations here keeps the kas wrapper
+    # self-documenting.
+    IMAGE_FSTYPES:append = " mender"
+    IMAGE_INSTALL:append = " mender mender-connect mender-update-module-fwu"
+
+target:
+  - core-image-fwu-test
