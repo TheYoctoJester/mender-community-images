@@ -1,0 +1,22 @@
+header:
+  version: 14
+  includes:
+  - ../../floating/qemux86-64-uboot-efi.yml
+
+# Validation variant of the qemux86-64 U-Boot EFI demo: adds the on-device
+# bootloader-validation suite (A/B switch -> update -> rollback cycle, result
+# written to the data partition) on top of the EFI A/B image. Uses the
+# validation WKS that pre-populates Root B so the suite can boot into it.
+# meta-mender-validation is added as a layer under the existing
+# meta-mender-community (theyoctojester/wrynose-demos) repo from the base config.
+
+repos:
+  meta-mender-community:
+    layers:
+      meta-mender-validation:
+
+local_conf_header:
+  bootloader-validation: |
+    # Pre-populate Root B and install the validation suite
+    WKS_FILE = "mender-explicit-qemux86-64-validation.wks"
+    IMAGE_INSTALL:append = " bootloader-validation"

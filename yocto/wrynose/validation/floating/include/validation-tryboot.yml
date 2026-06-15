@@ -1,0 +1,21 @@
+header:
+  version: 14
+
+# Shared validation overlay for the Raspberry Pi tryboot demo. Adds the
+# on-device bootloader-validation suite (the _git recipe auto-detects the
+# tryboot backend) to the tryboot image. The tryboot WKS already populates both
+# rootA and rootB, so no separate validation WKS is needed; the result is read
+# back from the tryboot layout's data partition (partition 7). meta-mender-
+# validation is added as a layer under the existing meta-mender-community
+# (theyoctojester/wrynose-demos) repo from the base tryboot config.
+
+repos:
+  meta-mender-community:
+    layers:
+      meta-mender-validation:
+
+local_conf_header:
+  validation-tryboot: |
+    IMAGE_INSTALL:append = " bootloader-validation"
+    # The tryboot data partition is fixed-size in the WKS; keep it as-is.
+    MENDER_FEATURES_DISABLE:append = " mender-growfs-data"

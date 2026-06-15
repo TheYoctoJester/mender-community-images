@@ -1,0 +1,5 @@
+header:
+  version: 14
+  includes:
+  - ../../floating/raspberrypi5-tryboot.yml
+  - include/validation-tryboot.yml
