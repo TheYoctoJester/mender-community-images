@@ -124,7 +124,9 @@ The authoritative list is the contents of `yocto/<release>/{tagged,floating}/`. 
 - **RISC-V (experimental)** — `nezha-allwinner-d1`.
 - **Intel** — `x86-virtual`.
 
-### Kirkstone
+### Kirkstone (on-demand only)
+
+Maintained on demand only as of 2026-06-15 — kas configs preserved, no scheduled CI. `kas build yocto/kirkstone/...` continues to work locally, and the `build-yocto-kirkstone-*` workflows in `mender-integration-builds` remain `workflow_dispatch`-able for spot validation. Wrynose has taken kirkstone's place in the scheduled maintained-LTS set alongside scarthgap.
 
 - **Raspberry Pi** — `raspberrypi3-64`, `raspberrypi4-64`, `raspberrypi5`, `raspberrypi-armv8`.
 - **BeagleBone** — Black, Black U-Boot.
