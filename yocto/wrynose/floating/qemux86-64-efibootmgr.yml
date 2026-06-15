@@ -1,0 +1,74 @@
+header:
+  version: 14
+  includes:
+  - include/mender-base.yml
+
+# Mender A/B on qemux86-64 (wrynose) where the UEFI boot manager itself is the
+# slot selector:
+#
+#   QEMU -> OVMF (UEFI) -> EFI-stub bzImage (chosen by BootNext/BootOrder) -> Linux
+#
+# There is no stock Mender bootloader integration. A custom efibootmgr-rootfs
+# Update Module writes the inactive slot, copies its EFI-stub kernel onto the
+# ESP, sets BootNext for the one-shot trial boot, and rewrites BootOrder on
+# commit. See the meta-mender-efibootmgr layer README in meta-mender-community
+# at branch wrynose-demos for the design and the manual QEMU/OVMF run command
+# (runqemu cannot drive this setup).
+#
+# Server URL and tenant token are intentionally not committed; provide them in
+# a local override to connect to your Mender server, e.g.:
+#   MENDER_SERVER_URL = "https://hosted.mender.io"
+#   MENDER_TENANT_TOKEN = "<your token>"
+
+machine: qemux86-64
+
+repos:
+  meta-mender-community:
+    url: https://github.com/theyoctojester/meta-mender-community.git
+    branch: wrynose-demos
+    layers:
+      meta-mender-efibootmgr:
+
+local_conf_header:
+  mender-artifact: |
+    MENDER_ARTIFACT_NAME = "efibootmgr-demo"
+    MENDER_DEVICE_TYPE = "qemux86-64-efibootmgr"
+    IMAGE_FSTYPES:prepend = "ext4 "
+
+  mender: |
+    # Set the feature set globally (local.conf) so non-image recipes -- mender,
+    # mender-connect -- observe it too, not only the image recipe which inherits
+    # mender-efibootmgr. No bootloader feature: the Update Module owns A/B.
+    MENDER_FEATURES_ENABLE:append = " \
+        mender-auth-install \
+        mender-update-install \
+        mender-systemd \
+    "
+    MENDER_FEATURES_DISABLE:append = " \
+        mender-image \
+        mender-part-images \
+        mender-uboot \
+        mender-grub \
+        mender-bios \
+        mender-growfs-data \
+    "
+
+    PREFERRED_PROVIDER_mender-native =  "mender-native"
+    PREFERRED_RPROVIDER_mender-auth =   "mender"
+    PREFERRED_RPROVIDER_mender-update = "mender"
+    PREFERRED_VERSION_mender-artifact-native = "4.%"
+
+  qemu: |
+    # SATA/AHCI storage -- virtio devices are NOT re-enumerated by OVMF after a
+    # guest reboot in QEMU, breaking the boot chain. Build OVMF so the firmware
+    # (ovmf.code/ovmf.vars) is deployed for the manual QEMU run.
+    MACHINE_FEATURES += "efi"
+    MENDER_EFI_LOADER = ""
+    EXTRA_IMAGEDEPENDS += "ovmf"
+    QB_MEM = "-m 2048"
+    QB_DEFAULT_FSTYPE = "wic"
+    QB_DEFAULT_KERNEL = "none"
+    QB_ROOTFS_OPT = ""
+
+target:
+  - mender-efibootmgr-image
