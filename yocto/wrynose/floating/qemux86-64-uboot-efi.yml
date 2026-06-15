@@ -100,8 +100,8 @@ local_conf_header:
     # x86 does not use device trees
     MENDER_DTB_NAME_FORCE = "none"
 
-    # WKS search path: include our layer's wic/ directory
-    WKS_SEARCH_PATH:prepend = "${LAYERDIR_meta-mender-x86-uboot-efi}/wic:"
+    # WKS search path: include our layer's files/wic/ directory
+    WKS_SEARCH_PATH:prepend = "${LAYERDIR_meta-mender-x86-uboot-efi}/files/wic:"
 
     IMAGE_INSTALL:append = " x86-uboot-efi-env efibootmgr"
     # Persist Mender state on /data so the post-reboot ArtifactCommit survives
