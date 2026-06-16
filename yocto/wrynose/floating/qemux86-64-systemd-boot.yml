@@ -1,0 +1,116 @@
+header:
+  version: 14
+  includes:
+  - include/mender-full.yml
+
+# Mender A/B on qemux86-64 (wrynose) driven by stock, unpatched systemd-boot
+# using systemd's native Automatic Boot Assessment (boot counting) for
+# in-firmware rollback:
+#
+#   QEMU -> OVMF (UEFI) -> systemd-boot (EFI/BOOT/BOOTX64.EFI) ->
+#       Type #1 boot entry (bzImage + initrd) -> kernel
+#
+# Each rootfs slot has a Boot Loader Specification entry on the ESP. On an
+# update the mender-sdboot-shim writes the trial slot's entry with a boot
+# counter in its filename (mender-b+1-0.conf); systemd-boot decrements it at
+# selection and, once it reaches zero, prefers the still-good committed slot
+# -- that is the rollback, with no patch to systemd-boot. On commit the shim
+# strips the counter ("blesses" the slot). A/B state lives entirely in files
+# on the FAT ESP; no EFI variables are written, so no NVRAM persistence is
+# required.
+#
+# Distinct from the other systemd-boot-adjacent demos in this repo:
+#   - meta-mender-uki boots Unified Kernel Images and has no firmware
+#     rollback (it only rewrites loader.conf `default`);
+#   - meta-mender-efibootmgr selects the slot via UEFI BootNext/BootOrder.
+# This one uses classic Type #1 BLS entries and systemd-boot's own boot
+# assessment. See the meta-mender-systemd-boot README in meta-mender-community
+# at branch wrynose-demos for the design and the manual QEMU/OVMF run command
+# (runqemu cannot drive the OVMF + AHCI setup).
+#
+# Server URL and tenant token are intentionally not committed; provide them
+# in a local override, e.g.:
+#   MENDER_SERVER_URL   = "https://hosted.mender.io"
+#   MENDER_TENANT_TOKEN = "<your token>"
+
+machine: qemux86-64
+
+repos:
+  meta-mender-community:
+    url: https://github.com/theyoctojester/meta-mender-community.git
+    branch: wrynose-demos
+    layers:
+      meta-mender-systemd-boot:
+
+local_conf_header:
+  # Overrides the `mender-artifact` block in mender-base.yml (same key, so it
+  # replaces rather than duplicating -- otherwise the include's gha_autobuild
+  # default would be emitted last and win). Bump between builds
+  # (release-1 -> release-2 ...) so deployments on hosted.mender.io are
+  # meaningful.
+  mender-artifact: |
+    MENDER_ARTIFACT_NAME = "release-1"
+
+  systemd-boot: |
+    EFI_PROVIDER = "systemd-boot"
+    MACHINE_FEATURES:append = " efi"
+
+    # Type #1 boot entries reference a separate kernel + initrd; the initrd
+    # (core-image-minimal-initramfs) carries udev to resolve root=PARTLABEL.
+    INITRAMFS_IMAGE = "core-image-minimal-initramfs"
+    INITRAMFS_FSTYPES = "cpio.gz"
+
+    # Build-time + runtime A/B staging. Applied only to the demo image.
+    IMAGE_CLASSES:append:pn-core-image-minimal = " mender-systemd-boot-ab"
+
+    # bootctl + the boot-assessment tooling, for inspection; the shim does
+    # the actual blessing and masks systemd-bless-boot.service so trials are
+    # only blessed by Mender's commit. (systemd's bootloader/bless-boot bits
+    # live under the `efi` PACKAGECONFIG, not a `boot` one.)
+    PACKAGECONFIG:append:pn-systemd = " efi"
+
+    QB_DEFAULT_KERNEL = "none"
+    QEMU_USE_KVM = ""
+
+  mender: |
+    DISTRO_FEATURES:append = " systemd"
+
+    # No stock bootloader integration -- mender-sdboot-shim provides
+    # fw_setenv/fw_printenv. mender-image / mender-part-images are off so the
+    # explicit wks in meta-mender-systemd-boot/files/wic/ owns the layout.
+    MENDER_FEATURES_DISABLE:append = " mender-grub mender-uboot mender-systemd-boot mender-bios mender-image mender-part-images mender-image-uefi mender-growfs-data"
+    MENDER_FEATURES_ENABLE:append  = " mender-auth-install mender-update-install mender-systemd"
+
+    IMAGE_INSTALL:append = " mender-sdboot-shim util-linux-findmnt util-linux-mount util-linux-blockdev"
+
+    WKS_FILE = "mender-systemd-boot-qemux86-64.wks.in"
+    IMAGE_FSTYPES:pn-core-image-minimal:append = " wic mender"
+
+    # MENDER_DEVICE_TYPE sets the device's /var/lib/mender/device_type; it
+    # must match the artifact's compatible-device list for a deployment to be
+    # accepted.
+    MENDER_DEVICE_TYPE = "qemux86-64-systemd-boot"
+    MENDER_DEVICE_TYPES_COMPATIBLE = "qemux86-64-systemd-boot"
+
+    # Runtime device paths read by mender-client. The demo uses an AHCI disk
+    # (/dev/sda) because OVMF does not re-enumerate virtio across reboots.
+    MENDER_STORAGE_DEVICE = "/dev/sda"
+    MENDER_BOOT_PART      = "/dev/sda1"
+    MENDER_ROOTFS_PART_A  = "/dev/sda2"
+    MENDER_ROOTFS_PART_B  = "/dev/sda3"
+    MENDER_DATA_PART      = "/dev/sda4"
+
+    # Informational - mender-part-images is off; the wks fixes the layout.
+    MENDER_BOOT_PART_SIZE_MB     = "256"
+    MENDER_DATA_PART_SIZE_MB     = "64"
+    MENDER_STORAGE_TOTAL_SIZE_MB = "2368"
+
+  qemu: |
+    # Build OVMF so the firmware (ovmf.code/ovmf.vars) is deployed for the
+    # manual QEMU run; runqemu cannot drive the pflash-OVMF + AHCI setup.
+    EXTRA_IMAGEDEPENDS += "ovmf"
+    QB_MEM = "-m 2048"
+    QB_DEFAULT_FSTYPE = "wic"
+
+target:
+  - core-image-minimal
