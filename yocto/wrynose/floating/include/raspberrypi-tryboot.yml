@@ -38,9 +38,9 @@ local_conf_header:
     ENABLE_UART = "1"
     IMAGE_FSTYPES = "wic ext4"
     WKS_FILE = "sdimage-rpi-mender-tryboot.wks"
-    # wrynose's default WKS_SEARCH_PATH only searches <layer>/files/wic; the
-    # tryboot WKS ships in the layer's wic/ dir, so add it explicitly.
-    WKS_SEARCH_PATH:prepend = "${LAYERDIR_mender-raspberrypi-tryboot}/wic:"
+    # The tryboot WKS ships in the layer's files/wic/ dir, which is on the
+    # default WKS_SEARCH_PATH (${BBPATH}/files/wic) and is the location wrynose's
+    # wic/wks sanity check requires, so no explicit WKS_SEARCH_PATH is needed.
 
     # Mender client without bootloader integration. tryboot-cmdline
     # post-processes the WIC to set per-partition root= in cmdline.txt.
