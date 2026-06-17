@@ -1,0 +1,114 @@
+header:
+  version: 14
+  includes:
+  - include/mender-base.yml
+
+# Manage a RAUC-updated A/B system from the Mender server, on raspberrypi4-64
+# (wrynose). The real-hardware counterpart of qemuarm64-rauc.yml: RAUC stays the
+# on-device updater, the Mender client runs in client-only mode, and the custom
+# "rauc" Update Module installs a RAUC bundle (.raucb) delivered inside a Mender
+# artifact. See the meta-mender-rauc layer README in meta-mender-community at
+# branch wrynose-demos for the design.
+#
+# The A/B machine here is rauc/meta-rauc-community's meta-rauc-raspberrypi
+# (RPi + U-Boot + boot-attempt-counter bootscript + dual-rootfs wks), not
+# meta-mender's own RPi integration; RAUC owns the rootfs, so mender-full is off
+# and meta-mender-raspberrypi is intentionally not included.
+#
+# Unlike meta-rauc-qemuarm, meta-rauc-raspberrypi already declares wrynose
+# LAYERSERIES_COMPAT, so no compat force is needed in bblayers.conf.
+#
+# Server URL and tenant token are intentionally not committed; provide them in
+# a local override to connect to your Mender server, e.g.:
+#   MENDER_SERVER_URL = "https://hosted.mender.io"
+#   MENDER_TENANT_TOKEN = "<your token>"
+
+machine: raspberrypi4-64
+
+repos:
+  # RAUC core (recipes for the rauc daemon, bundle/image classes). The layer is
+  # the repo root, so no layers: subkey.
+  meta-rauc:
+    url: https://github.com/rauc/meta-rauc.git
+    branch: wrynose
+
+  # The RAUC A/B demo machine for Raspberry Pi: slots (mmcblk0p2/p3), the
+  # dual-rootfs wks, the u-boot boot.cmd with the A/B attempt counter, system.conf
+  # and the kernel rauc.cfg. Declares wrynose compat itself.
+  meta-rauc-community:
+    url: https://github.com/rauc/meta-rauc-community.git
+    branch: master
+    layers:
+      meta-rauc-raspberrypi:
+
+  # Raspberry Pi BSP. Tracks master until upstream cuts wrynose, matching the
+  # other wrynose RPi configs (see include/raspberrypi.yml).
+  meta-raspberrypi:
+    url: https://github.com/agherzan/meta-raspberrypi.git
+    branch: master
+
+  # The Mender client (client-only) + the RAUC<->Mender glue.
+  meta-mender-community:
+    url: https://github.com/theyoctojester/meta-mender-community.git
+    branch: wrynose-demos
+    layers:
+      meta-mender-client-only:
+      meta-mender-rauc:
+
+local_conf_header:
+  rauc-machine: |
+    # RAUC A/B machine config for Raspberry Pi (cf. meta-rauc-raspberrypi README).
+    # U-Boot is the bootloader RAUC drives; the boot.cmd attempt counter provides
+    # the rollback. The dual-rootfs wks lays out boot + rootfs A/B + /data + /home.
+    RPI_USE_U_BOOT = "1"
+    ENABLE_UART = "1"
+    DISTRO_FEATURES:append = " rauc"
+    INIT_MANAGER = "systemd"
+
+    WKS_FILE = "sdimage-dual-raspberrypi.wks.in"
+    IMAGE_FSTYPES:append = " wic ext4"
+    IMAGE_FSTYPES:remove = " rpi-sdimg"
+
+    EXTRA_IMAGE_FEATURES += "allow-empty-password allow-root-login empty-root-password"
+    EXTRA_IMAGE_FEATURES += "ssh-server-openssh"
+
+  rauc-mender: |
+    # Mender client (client-only) + the RAUC<->Mender glue. meta-mender-client-only
+    # sets device_type = MACHINE (raspberrypi4-64); RAUC owns the A/B rootfs so
+    # none of mender's own image/bootloader features are enabled.
+    IMAGE_INSTALL:append = " mender-auth mender-update"
+    IMAGE_INSTALL:append = " rauc rauc-update-module mender-rauc-data"
+
+    # Report RAUC status (installed bundle versions, slot/boot state) as Mender
+    # device inventory. meta-mender-rauc's mender bbappend also drops the stock
+    # rootfs-image Update Module (conflicts with RAUC owning the rootfs A/B).
+    IMAGE_INSTALL:append = " rauc-inventory"
+
+    # meta-rauc-raspberrypi already RDEPENDS u-boot-fw-utils + u-boot-env on the
+    # rauc package, but meta-mender's libubootenv bbappend can still shadow the
+    # u-boot-env package that ships /etc/fw_env.config; keep it explicit so RAUC
+    # can always read/write the u-boot environment (cf. qemuarm64-rauc.yml).
+    IMAGE_INSTALL:append = " u-boot-env"
+
+    # meta-mender's version-inventory-script (6.0.0) fails do_package QA on
+    # wrynose: it installs /usr/share/mender/inventory/mender-inventory-client-version
+    # but does not ship it. Not needed here; drop it from the client PACKAGECONFIG.
+    PACKAGECONFIG:remove:pn-mender = "version-inventory-script version-inventory-script-strict"
+
+    # Bump between releases (rauc-raspberrypi4-64-1 -> -2 ...) so deployments on
+    # the Mender server are meaningful. The deployed bundle artifact is
+    # rauc-raspberrypi4-64-2 (see update-bundle-mender's MENDER_RAUC_ARTIFACT_NAME).
+    MENDER_ARTIFACT_NAME = "rauc-raspberrypi4-64-1"
+
+    # Short poll intervals: this is a demo / CI-test image, so a server-driven
+    # deployment should be detected within seconds rather than the meta-mender
+    # defaults (update 1800 s, inventory 28800 s, retry 300 s). Keeps the
+    # hardware OTA test fast.
+    MENDER_UPDATE_POLL_INTERVAL_SECONDS = "30"
+    MENDER_INVENTORY_POLL_INTERVAL_SECONDS = "30"
+    MENDER_RETRY_POLL_INTERVAL_SECONDS = "30"
+
+target:
+  - core-image-minimal
+  - update-bundle
+  - update-bundle-mender
