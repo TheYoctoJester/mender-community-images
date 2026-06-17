@@ -1,0 +1,96 @@
+header:
+  version: 14
+  includes:
+  - include/mender-full.yml
+
+# Mender A/B on Raspberry Pi 4 (wrynose) driven by the barebox bootloader.
+#
+#   RPi GPU firmware -> config.txt (kernel=barebox.img) -> barebox reads the
+#   U-Boot env via its ubootvar driver -> /env/boot/mender selects the rootfs
+#   slot, does the bootcount/rollback, and boots that slot's /boot/Image + DTB.
+#
+# Mender's stock rootfs-image module owns the A/B rootfs and drives the boot
+# decision through libubootenv's fw_setenv/fw_printenv -- the same U-Boot-format
+# env barebox reads. No shim. See the meta-mender-barebox README in
+# meta-mender-community at branch wrynose-demos for the design and the bring-up
+# checklist (env round-trip, the uboot-environment DT node, the barebox disk
+# name, root=PARTLABEL resolution).
+#
+# Validate the qemuarm64-barebox demo first; this is the hardware port.
+#
+# Server URL and tenant token are intentionally not committed; provide them in a
+# local override, e.g.:
+#   MENDER_SERVER_URL   = "https://hosted.mender.io"
+#   MENDER_TENANT_TOKEN = "<your token>"
+
+machine: raspberrypi4-64
+
+repos:
+  meta-raspberrypi:
+    url: https://github.com/agherzan/meta-raspberrypi.git
+    branch: master
+
+  meta-mender-community:
+    url: https://github.com/theyoctojester/meta-mender-community.git
+    branch: wrynose-demos
+    layers:
+      meta-mender-barebox:
+
+local_conf_header:
+  mender-artifact: |
+    MENDER_ARTIFACT_NAME = "barebox-1"
+
+  raspberrypi: |
+    # barebox replaces U-Boot on this board: do NOT enable RPI_USE_U_BOOT.
+    ENABLE_UART = "1"
+    IMAGE_INSTALL:append = " kernel-image kernel-devicetree"
+    IMAGE_FSTYPES:remove = " rpi-sdimg"
+
+    # The GPU firmware must load barebox as the "kernel". meta-raspberrypi
+    # generates config.txt; point it at barebox, keep the UART on, and force
+    # 64-bit mode. arm_64bit=1 is REQUIRED: meta-raspberrypi relies on the
+    # kernel8.img name for the firmware's 64-bit auto-detection, which we lose by
+    # setting kernel=barebox.img -- without it the firmware would try to run the
+    # aarch64 barebox-raspberry-pi.img in 32-bit mode.
+    RPI_EXTRA_CONFIG:append = '\nkernel=barebox.img\narm_64bit=1\nenable_uart=1\ncore_freq=250\n'
+
+  barebox: |
+    PREFERRED_PROVIDER_virtual/bootloader = "barebox"
+    EXTRA_IMAGEDEPENDS += "barebox"
+    # RPi4 (aarch64) defconfig; confirm the in-tree name against the pinned
+    # barebox (rpi_v8a_defconfig per upstream docs).
+    BAREBOX_CONFIG:raspberrypi4-64 = "rpi_v8a_defconfig"
+
+    # FAT boot partition contents: the RPi firmware blobs (from meta-raspberrypi)
+    # plus the barebox image renamed to barebox.img. The exact firmware file
+    # list is supplied by meta-raspberrypi; append the barebox image.
+    IMAGE_BOOT_FILES:append = " barebox-raspberry-pi.img;barebox.img"
+
+    IMAGE_CLASSES:append:pn-core-image-minimal = " mender-barebox-ab"
+
+  mender: |
+    DISTRO_FEATURES:append = " systemd"
+
+    MENDER_FEATURES_DISABLE:append = " mender-grub mender-uboot mender-image mender-part-images mender-image-uefi mender-growfs-data"
+    MENDER_FEATURES_ENABLE:append  = " mender-auth-install mender-update-install mender-systemd"
+
+    IMAGE_INSTALL:append = " mender-barebox-data libubootenv-bin"
+
+    WKS_FILE = "mender-barebox-raspberrypi4-64.wks.in"
+    IMAGE_FSTYPES:pn-core-image-minimal:append = " wic mender"
+
+    MENDER_DEVICE_TYPE = "raspberrypi4-64-barebox"
+    MENDER_DEVICE_TYPES_COMPATIBLE = "raspberrypi4-64-barebox"
+
+    MENDER_STORAGE_DEVICE   = "/dev/mmcblk0"
+    MENDER_BOOT_PART        = "/dev/mmcblk0p1"
+    MENDER_ROOTFS_PART_A    = "/dev/mmcblk0p2"
+    MENDER_ROOTFS_PART_B    = "/dev/mmcblk0p3"
+    MENDER_DATA_PART        = "/dev/mmcblk0p4"
+    BAREBOX_MENDER_ENV_DEVICE = "/dev/mmcblk0p5"
+
+    MENDER_BOOT_PART_SIZE_MB     = "64"
+    MENDER_DATA_PART_SIZE_MB     = "128"
+
+target:
+  - core-image-minimal

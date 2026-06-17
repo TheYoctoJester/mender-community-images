@@ -1,0 +1,84 @@
+header:
+  version: 14
+  includes:
+  - include/mender-full.yml
+
+# Mender A/B on qemuarm64 (wrynose) driven by the barebox bootloader.
+#
+#   qemu -M virt -> barebox (loaded via -kernel) -> reads the U-Boot env via its
+#   ubootvar driver -> /env/boot/mender selects the rootfs slot, does the
+#   bootcount/rollback, and boots that slot's /boot/Image.
+#
+# Mender's stock rootfs-image module owns the A/B rootfs and mutates the boot
+# decision only through libubootenv's fw_setenv/fw_printenv -- the same env
+# barebox reads. So there is no shim, unlike the systemd-boot / UKI demos. See
+# the meta-mender-barebox README in meta-mender-community at branch
+# wrynose-demos for the design and the bring-up checklist.
+#
+# Server URL and tenant token are intentionally not committed; provide them in a
+# local override, e.g.:
+#   MENDER_SERVER_URL   = "https://hosted.mender.io"
+#   MENDER_TENANT_TOKEN = "<your token>"
+
+machine: qemuarm64
+
+repos:
+  meta-mender-community:
+    url: https://github.com/theyoctojester/meta-mender-community.git
+    branch: wrynose-demos
+    layers:
+      meta-mender-barebox:
+
+local_conf_header:
+  mender-artifact: |
+    MENDER_ARTIFACT_NAME = "barebox-1"
+
+  barebox: |
+    # barebox is the bootloader; pull it into the image deploy. oe-core's
+    # barebox.bbclass already maps qemuarm64 -> multi_v8_defconfig.
+    PREFERRED_PROVIDER_virtual/bootloader = "barebox"
+    EXTRA_IMAGEDEPENDS += "barebox"
+
+    # The FAT boot partition is assembled by the bootimg-partition wic plugin
+    # from IMAGE_BOOT_FILES. The demo loads barebox via qemu -kernel, so this is
+    # only a convenience copy; confirm the deployed barebox image name.
+    IMAGE_BOOT_FILES = "barebox-dt-2nd.img"
+
+    # Build-time A/B staging + image-side glue (fstab, seeded /data, bootstrap
+    # artifact, initial U-Boot env image). Applied only to the demo image.
+    IMAGE_CLASSES:append:pn-core-image-minimal = " mender-barebox-ab"
+
+  mender: |
+    DISTRO_FEATURES:append = " systemd"
+
+    # No stock bootloader integration and no mender-managed wic: barebox + the
+    # explicit wks own boot and layout. mender-update-install keeps the
+    # rootfs-image update module (the A/B driver) active.
+    MENDER_FEATURES_DISABLE:append = " mender-grub mender-uboot mender-image mender-part-images mender-image-uefi mender-growfs-data"
+    MENDER_FEATURES_ENABLE:append  = " mender-auth-install mender-update-install mender-systemd"
+
+    IMAGE_INSTALL:append = " mender-barebox-data libubootenv-bin"
+
+    WKS_FILE = "mender-barebox-qemuarm64.wks.in"
+    IMAGE_FSTYPES:pn-core-image-minimal:append = " wic mender"
+
+    # Device type must match the artifact's compatible-device list.
+    MENDER_DEVICE_TYPE = "qemuarm64-barebox"
+    MENDER_DEVICE_TYPES_COMPATIBLE = "qemuarm64-barebox"
+
+    # Runtime device paths read by mender-client and the env tooling.
+    MENDER_STORAGE_DEVICE   = "/dev/vda"
+    MENDER_BOOT_PART        = "/dev/vda1"
+    MENDER_ROOTFS_PART_A    = "/dev/vda2"
+    MENDER_ROOTFS_PART_B    = "/dev/vda3"
+    MENDER_DATA_PART        = "/dev/vda4"
+    # libubootenv (fw_setenv/fw_printenv) and barebox both use this raw env
+    # partition; keep it in sync with the wks (partition 5).
+    BAREBOX_MENDER_ENV_DEVICE = "/dev/vda5"
+
+    # Informational - mender-part-images is off; the wks fixes the layout.
+    MENDER_BOOT_PART_SIZE_MB     = "64"
+    MENDER_DATA_PART_SIZE_MB     = "128"
+
+target:
+  - core-image-minimal
