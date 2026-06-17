@@ -3,6 +3,15 @@ header:
   includes:
   - include/mender-base.yml
 
+# Forward MENDER_TENANT_TOKEN from the build environment into bitbake. kas
+# sanitises the environment and only passes through variables declared here,
+# so without this the CI-provided secret never reaches meta-mender and the
+# image bakes the "dummy" placeholder token -- the device then cannot enrol on
+# hosted.mender.io and the OTA test fails. The "dummy" default keeps local
+# builds (which set no token, or override it in a local file) working.
+env:
+  MENDER_TENANT_TOKEN: "dummy"
+
 # Manage a RAUC-updated A/B system from the Mender server, on raspberrypi4-64
 # (wrynose). The real-hardware counterpart of qemuarm64-rauc.yml: RAUC stays the
 # on-device updater, the Mender client runs in client-only mode, and the custom
@@ -18,10 +27,12 @@ header:
 # Unlike meta-rauc-qemuarm, meta-rauc-raspberrypi already declares wrynose
 # LAYERSERIES_COMPAT, so no compat force is needed in bblayers.conf.
 #
-# Server URL and tenant token are intentionally not committed; provide them in
-# a local override to connect to your Mender server, e.g.:
-#   MENDER_SERVER_URL = "https://hosted.mender.io"
+# MENDER_SERVER_URL is committed below (hosted.mender.io, the demo's target
+# server -- not a secret). The tenant token IS a secret and is intentionally not
+# committed: CI injects MENDER_TENANT_TOKEN at build time, and for a local build
+# you provide it in a local override:
 #   MENDER_TENANT_TOKEN = "<your token>"
+# Override MENDER_SERVER_URL in a local file if pointing at a different server.
 
 machine: raspberrypi4-64
 
@@ -77,6 +88,14 @@ local_conf_header:
     # sets device_type = MACHINE (raspberrypi4-64); RAUC owns the A/B rootfs so
     # none of mender's own image/bootloader features are enabled.
     IMAGE_INSTALL:append = " mender-auth mender-update"
+
+    # Point the client at hosted.mender.io. Without this, meta-mender defaults
+    # ServerURL to the docker.mender.io placeholder, which does not resolve:
+    # mender-authd can never authenticate, mender-updated stays unauthorized,
+    # and the device never reports inventory (e.g. device_type) -- which is what
+    # the OTA test waits for. The tenant token is injected separately by CI
+    # (MENDER_TENANT_TOKEN); only the non-secret server URL is set here.
+    MENDER_SERVER_URL = "https://hosted.mender.io"
     IMAGE_INSTALL:append = " rauc rauc-update-module mender-rauc-data"
 
     # Report RAUC status (installed bundle versions, slot/boot state) as Mender
