@@ -58,7 +58,12 @@ local_conf_header:
     # 2 GiB we hand QEMU". runqemu's default for this machine is -m 1024 (1 GiB);
     # reserving a 1 GiB U-Boot heap out of 1 GiB DRAM wedges U-Boot in early
     # relocation right after the "DRAM:" banner (never reaches userspace).
-    QB_MEM = "-m 2048"
+    #
+    # :forcevariable because local.conf is parsed BEFORE the machine conf, and
+    # qemuarm64-secureboot pins QB_MEM with a hard "=" assignment -- a plain
+    # local.conf QB_MEM loses to it (observed: runqemu still launched -m 1024).
+    # forcevariable is the strongest override and wins regardless of parse order.
+    QB_MEM:forcevariable = "-m 2048"
 
     # qemuarm64-secureboot uses the device tree QEMU supplies at
     # runtime; no kernel DTB is built or deployed. meta-mender bails
