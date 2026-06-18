@@ -52,6 +52,14 @@ local_conf_header:
     QB_KERNEL_ROOT = ""
     QB_DEFAULT_KERNEL = "none"
 
+    # Hand QEMU 2 GiB. The FWU U-Boot fragment (meta-mender-fwu fwu.cfg) sets
+    # CONFIG_SYS_MALLOC_LEN=0x40000000 (1 GiB heap, so the EFI capsule loader can
+    # read a ~900 MiB rootfs capsule in one shot) and explicitly assumes "the
+    # 2 GiB we hand QEMU". runqemu's default for this machine is -m 1024 (1 GiB);
+    # reserving a 1 GiB U-Boot heap out of 1 GiB DRAM wedges U-Boot in early
+    # relocation right after the "DRAM:" banner (never reaches userspace).
+    QB_MEM = "-m 2048"
+
     # qemuarm64-secureboot uses the device tree QEMU supplies at
     # runtime; no kernel DTB is built or deployed. meta-mender bails
     # when KERNEL_DEVICETREE is empty -- force a placeholder.
