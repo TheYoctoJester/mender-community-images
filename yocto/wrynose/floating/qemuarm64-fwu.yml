@@ -42,6 +42,16 @@ local_conf_header:
     MENDER_UBOOT_STORAGE_INTERFACE = "virtio"
     MENDER_UBOOT_STORAGE_DEVICE = "0"
 
+    # Boot via the firmware (flash.bin: TF-A -> U-Boot -> distroboot reads
+    # boot.scr.uimg -> FWU picks the bank -> bootefi loads the kernel from the
+    # bank partition), NOT via a qemu-injected -kernel. Without this, runqemu
+    # adds "-kernel Image -append root=/dev/vda2 ..." alongside the flash.bin
+    # BIOS, which collides with the firmware boot path and hangs U-Boot at DRAM
+    # init (observed: console stops at "DRAM:" and never reaches userspace).
+    # The qemuarm64-uki demo sets the same pair for the same reason.
+    QB_KERNEL_ROOT = ""
+    QB_DEFAULT_KERNEL = "none"
+
     # qemuarm64-secureboot uses the device tree QEMU supplies at
     # runtime; no kernel DTB is built or deployed. meta-mender bails
     # when KERNEL_DEVICETREE is empty -- force a placeholder.
