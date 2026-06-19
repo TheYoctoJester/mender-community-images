@@ -78,6 +78,13 @@ local_conf_header:
   mender: |
     MENDER_DEVICE_TYPES_COMPATIBLE = "qemuarm64-swupdate"
 
+    # meta-mender's version-inventory-script (6.0.0) fails do_package QA on
+    # wrynose: it installs /usr/share/mender/inventory/mender-inventory-client-version
+    # but does not ship it. It only reports the mender_client_version inventory
+    # attribute and is not needed here; drop it from the client PACKAGECONFIG.
+    # (Same fix as the qemuarm64-rauc demo.)
+    PACKAGECONFIG:remove:pn-mender = "version-inventory-script version-inventory-script-strict"
+
     # Bump between builds (swupdate-wrynose-v1 -> swupdate-wrynose-v2 ...) so
     # deployments on the Mender server are meaningful. The companion
     # make-artifact.sh in the build NOTE.txt wraps the built .swu into a
