@@ -76,6 +76,12 @@ local_conf_header:
     SWUPDATE_SOFTWARE_VERSION = "1.0"
 
   mender: |
+    # mender-base sets INIT_MANAGER=systemd, but (as every other wrynose demo
+    # does) systemd must also be an explicit DISTRO_FEATURE so the mender
+    # client / mender-connect systemd service units are installed and enabled.
+    # Without it, mender-connect do_package fails ("Didn't find service unit").
+    DISTRO_FEATURES:append = " systemd"
+
     MENDER_DEVICE_TYPES_COMPATIBLE = "qemuarm64-swupdate"
 
     # meta-mender's version-inventory-script (6.0.0) fails do_package QA on
