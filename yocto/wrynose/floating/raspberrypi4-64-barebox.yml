@@ -82,12 +82,19 @@ local_conf_header:
     MENDER_DEVICE_TYPE = "raspberrypi4-64-barebox"
     MENDER_DEVICE_TYPES_COMPATIBLE = "raspberrypi4-64-barebox"
 
-    MENDER_STORAGE_DEVICE   = "/dev/mmcblk0"
-    MENDER_BOOT_PART        = "/dev/mmcblk0p1"
-    MENDER_ROOTFS_PART_A    = "/dev/mmcblk0p2"
-    MENDER_ROOTFS_PART_B    = "/dev/mmcblk0p3"
-    MENDER_DATA_PART        = "/dev/mmcblk0p4"
-    BAREBOX_MENDER_ENV_DEVICE = "/dev/mmcblk0p5"
+    # On RPi4 the SD card enumerates as mmcblk1: the BCM43455 WiFi SDIO grabs
+    # mmc0, the emmc2 SD controller is mmc1. So Mender's runtime device paths
+    # (rootfs A/B write targets, the libubootenv env device) must be mmcblk1*,
+    # not mmcblk0* -- otherwise the OTA writes the new rootfs and the boot env
+    # to the (partition-less) WiFi controller and the update fails. The wks
+    # lays partitions out by GPT partlabel, so its --ondisk name is irrelevant
+    # to the runtime device.
+    MENDER_STORAGE_DEVICE   = "/dev/mmcblk1"
+    MENDER_BOOT_PART        = "/dev/mmcblk1p1"
+    MENDER_ROOTFS_PART_A    = "/dev/mmcblk1p2"
+    MENDER_ROOTFS_PART_B    = "/dev/mmcblk1p3"
+    MENDER_DATA_PART        = "/dev/mmcblk1p4"
+    BAREBOX_MENDER_ENV_DEVICE = "/dev/mmcblk1p5"
 
     MENDER_BOOT_PART_SIZE_MB     = "64"
     MENDER_DATA_PART_SIZE_MB     = "128"
