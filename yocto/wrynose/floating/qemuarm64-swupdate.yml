@@ -1,0 +1,85 @@
+header:
+  version: 14
+  includes:
+  - include/mender-base.yml
+
+# Manage a SWUpdate-updated A/B system from the Mender server, on qemuarm64
+# (wrynose). SWUpdate stays the on-device installer; the Mender client runs in
+# client-only mode and a custom "swu" Update Module installs a SWUpdate .swu
+# image delivered inside a Mender artifact. See the meta-mender-swupdate layer
+# README in meta-mender-community at branch wrynose-demos for the design and the
+# runtime quirks (persistent U-Boot env in FAT, boot.scr slot selection,
+# buffered vs streaming install).
+#
+# Why this is a separate file (not amended onto qemuarm64.yml):
+#   - a custom machine (qemuarm64-swupdate) provides the explicit A/B wic
+#     layout (boot + root-a + root-b + media) and points U-Boot at the FAT
+#     environment, rather than meta-mender's auto-partitioned EFI/grub qemu
+#     integration; SWUpdate owns the rootfs, so mender-full is off.
+#
+# Server URL and tenant token are intentionally not committed; provide them in
+# a local override to connect to your Mender server, e.g.:
+#   MENDER_SERVER_URL = "https://hosted.mender.io"
+#   MENDER_TENANT_TOKEN = "<your token>"
+
+machine: qemuarm64-swupdate
+
+target:
+  - all-images
+
+repos:
+  # SWUpdate core (swupdate daemon + the swupdate image/bundle classes).
+  meta-swupdate:
+    url: https://github.com/sbabic/meta-swupdate.git
+    branch: wrynose
+
+  # runqemu must launch via u-boot.bin (so distroboot runs our boot.scr and
+  # selects the A/B slot) instead of injecting "-kernel". That needs
+  # QB_DEFAULT_KERNEL = "none" (set in the qemuarm64-swupdate machine conf),
+  # which in turn needs this oe-core runqemu fix -- same patch the plain
+  # qemuarm64.yml uses. openembedded-core itself is pulled by mender-base.yml.
+  openembedded-core:
+    patches:
+      qemuboot-none-fix:
+        repo: meta-mender-community
+        path: patches/openembedded-core/0001-qemuboot-handle-QB_DEFAULT_KERNEL-none-properly.patch
+
+  # meta-swupdate's runtime/build deps (lua, python helpers, filesystem tools).
+  # meta-oe is already pulled by include/mender-base.yml; kas merges these in.
+  meta-openembedded:
+    layers:
+      meta-python:
+      meta-networking:
+      meta-filesystems:
+
+  # The Mender client (client-only) + the SWUpdate<->Mender glue (the custom
+  # machine, the explicit wic, the "swu" Update Module, the U-Boot boot script).
+  meta-mender-community:
+    url: https://github.com/theyoctojester/meta-mender-community.git
+    branch: wrynose-demos
+    layers:
+      meta-mender-client-only:
+      meta-mender-swupdate:
+
+local_conf_header:
+  no-full-client: |
+    MENDER_EFI_LOADER = ""
+    MENDER_UPDATE_POLL_INTERVAL_SECONDS = "5"
+    MENDER_INVENTORY_POLL_INTERVAL_SECONDS = "5"
+    MENDER_RETRY_POLL_INTERVAL_SECONDS = "30"
+
+  swupdate: |
+    # Demo hardware/software version. Kept at 1.0 -- must match the board
+    # section + hardware-compatibility list in sw-description.in and the
+    # "swupdate -H 1.0:1.0" in the swu Update Module.
+    SWUPDATE_HARDWARE_VERSION = "1.0"
+    SWUPDATE_SOFTWARE_VERSION = "1.0"
+
+  mender: |
+    MENDER_DEVICE_TYPES_COMPATIBLE = "qemuarm64-swupdate"
+
+    # Bump between builds (swupdate-wrynose-v1 -> swupdate-wrynose-v2 ...) so
+    # deployments on the Mender server are meaningful. The companion
+    # make-artifact.sh in the build NOTE.txt wraps the built .swu into a
+    # .mender artifact of payload type "swu".
+    MENDER_ARTIFACT_NAME = "swupdate-wrynose-v1"
