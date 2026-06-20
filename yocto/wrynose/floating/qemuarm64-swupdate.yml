@@ -17,10 +17,20 @@ header:
 #     environment, rather than meta-mender's auto-partitioned EFI/grub qemu
 #     integration; SWUpdate owns the rootfs, so mender-full is off.
 #
-# Server URL and tenant token are intentionally not committed; provide them in
-# a local override to connect to your Mender server, e.g.:
-#   MENDER_SERVER_URL = "https://hosted.mender.io"
+# MENDER_SERVER_URL is committed below (hosted.mender.io, the demo's target
+# server -- not a secret). The tenant token IS a secret and is intentionally not
+# committed: CI injects MENDER_TENANT_TOKEN at build time (see the env: block),
+# and for a local build you provide it in a local override:
 #   MENDER_TENANT_TOKEN = "<your token>"
+
+# Forward MENDER_TENANT_TOKEN from the build environment into bitbake. kas
+# sanitises the environment and only passes through variables declared here, so
+# without this the CI-provided secret never reaches meta-mender and the image
+# bakes the "dummy" placeholder token -- the device then cannot enrol on
+# hosted.mender.io and the OTA test fails. The "dummy" default keeps local
+# builds (which set no token, or override it in a local file) working.
+env:
+  MENDER_TENANT_TOKEN: "dummy"
 
 machine: qemuarm64-swupdate
 
@@ -81,6 +91,13 @@ local_conf_header:
     # client / mender-connect systemd service units are installed and enabled.
     # Without it, mender-connect do_package fails ("Didn't find service unit").
     DISTRO_FEATURES:append = " systemd"
+
+    # Point the client at hosted.mender.io. Without this, meta-mender defaults
+    # ServerURL to the docker.mender.io placeholder, which does not resolve:
+    # mender-authd can never authenticate and the device never enrols, so the
+    # OTA test cannot proceed. The tenant token is injected separately by CI
+    # (MENDER_TENANT_TOKEN, see env: above); only the non-secret URL is here.
+    MENDER_SERVER_URL = "https://hosted.mender.io"
 
     MENDER_DEVICE_TYPES_COMPATIBLE = "qemuarm64-swupdate"
 
