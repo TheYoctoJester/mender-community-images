@@ -2,6 +2,7 @@ header:
   version: 14
   includes:
   - include/mender-full.yml
+  - include/mender-explicit-ab.yml
 
 # Mender A/B on qemux86-64 (wrynose) driven by stock, unpatched systemd-boot
 # using systemd's native Automatic Boot Assessment (boot counting) for
@@ -76,10 +77,10 @@ local_conf_header:
     DISTRO_FEATURES:append = " systemd"
 
     # No stock bootloader integration -- mender-sdboot-shim provides
-    # fw_setenv/fw_printenv. mender-image / mender-part-images are off so the
-    # explicit wks in meta-mender-systemd-boot/files/wic/ owns the layout.
-    MENDER_FEATURES_DISABLE:append = " mender-grub mender-uboot mender-systemd-boot mender-bios mender-image mender-part-images mender-image-uefi mender-growfs-data"
-    MENDER_FEATURES_ENABLE:append  = " mender-auth-install mender-update-install mender-systemd"
+    # fw_setenv/fw_printenv. The common family-A skeleton (auth/update/systemd
+    # enable; image/part-images/grub/growfs-data disable) comes from
+    # include/mender-explicit-ab.yml; only the systemd-boot-specific toggles are here.
+    MENDER_FEATURES_DISABLE:append = " mender-uboot mender-systemd-boot mender-bios mender-image-uefi"
 
     IMAGE_INSTALL:append = " mender-sdboot-shim util-linux-findmnt util-linux-mount util-linux-blockdev"
 

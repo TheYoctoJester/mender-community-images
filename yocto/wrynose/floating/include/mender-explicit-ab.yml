@@ -1,0 +1,24 @@
+header:
+  version: 14
+
+# Shared Mender feature skeleton for the "family A" demos -- those where the
+# bootloader/firmware owns A/B rollback and Mender's rootfs-image module owns the
+# A/B rootfs, while the demo's own bootloader integration + an explicit wks own
+# boot and partition layout. meta-mender's image/partition generation and its
+# stock filesystem growth are therefore off in all of them.
+#
+# Only the lines that are IDENTICAL across every such demo live here. Each demo
+# still sets, on top of this:
+#   - its bootloader-specific MENDER_FEATURES_DISABLE toggles
+#     (mender-uboot / mender-systemd-boot / mender-image-uefi / mender-bios),
+#     or, for the x86 U-Boot EFI demo, MENDER_FEATURES_ENABLE += mender-uboot;
+#   - DISTRO_FEATURES:append = " systemd" where needed;
+#   - its own WKS_FILE, IMAGE_FSTYPES, device paths and artifact name.
+#
+# Consumers: qemuarm64-uki, qemux86-64-systemd-boot, qemux86-64-efibootmgr,
+# qemuarm64-barebox, raspberrypi4-64-barebox, qemux86-64-uboot-efi.
+
+local_conf_header:
+  mender-explicit-ab: |
+    MENDER_FEATURES_ENABLE:append = " mender-auth-install mender-update-install mender-systemd"
+    MENDER_FEATURES_DISABLE:append = " mender-image mender-part-images mender-grub mender-growfs-data"

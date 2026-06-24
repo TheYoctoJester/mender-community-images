@@ -2,6 +2,7 @@ header:
   version: 14
   includes:
   - include/mender-base.yml
+  - include/mender-explicit-ab.yml
 
 # Mender A/B on qemux86-64 (wrynose) where the UEFI boot manager itself is the
 # slot selector:
@@ -37,22 +38,12 @@ local_conf_header:
     IMAGE_FSTYPES:prepend = "ext4 "
 
   mender: |
-    # Set the feature set globally (local.conf) so non-image recipes -- mender,
-    # mender-connect -- observe it too, not only the image recipe which inherits
-    # mender-efibootmgr. No bootloader feature: the Update Module owns A/B.
-    MENDER_FEATURES_ENABLE:append = " \
-        mender-auth-install \
-        mender-update-install \
-        mender-systemd \
-    "
-    MENDER_FEATURES_DISABLE:append = " \
-        mender-image \
-        mender-part-images \
-        mender-uboot \
-        mender-grub \
-        mender-bios \
-        mender-growfs-data \
-    "
+    # The common family-A skeleton (auth/update/systemd enable; image/part-images/
+    # grub/growfs-data disable) comes from include/mender-explicit-ab.yml, set
+    # globally so non-image recipes (mender, mender-connect) observe it too. No
+    # bootloader feature: the Update Module owns A/B. Only the efibootmgr-specific
+    # extra disables are here.
+    MENDER_FEATURES_DISABLE:append = " mender-uboot mender-bios"
 
     PREFERRED_PROVIDER_mender-native =  "mender-native"
     PREFERRED_RPROVIDER_mender-auth =   "mender"

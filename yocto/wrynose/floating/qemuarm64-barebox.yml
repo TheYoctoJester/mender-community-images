@@ -2,6 +2,7 @@ header:
   version: 14
   includes:
   - include/mender-full.yml
+  - include/mender-explicit-ab.yml
 
 # Mender A/B on qemuarm64 (wrynose) driven by the barebox bootloader.
 #
@@ -52,10 +53,11 @@ local_conf_header:
     DISTRO_FEATURES:append = " systemd"
 
     # No stock bootloader integration and no mender-managed wic: barebox + the
-    # explicit wks own boot and layout. mender-update-install keeps the
-    # rootfs-image update module (the A/B driver) active.
-    MENDER_FEATURES_DISABLE:append = " mender-grub mender-uboot mender-image mender-part-images mender-image-uefi mender-growfs-data"
-    MENDER_FEATURES_ENABLE:append  = " mender-auth-install mender-update-install mender-systemd"
+    # explicit wks own boot and layout. The common family-A skeleton (auth/update/
+    # systemd enable; image/part-images/grub/growfs-data disable, which keeps the
+    # rootfs-image update module active) comes from include/mender-explicit-ab.yml;
+    # only the barebox-specific toggles are here.
+    MENDER_FEATURES_DISABLE:append = " mender-uboot mender-image-uefi"
 
     IMAGE_INSTALL:append = " mender-barebox-data libubootenv-bin"
 

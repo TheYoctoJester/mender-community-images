@@ -2,6 +2,7 @@ header:
   version: 14
   includes:
   - include/mender-base.yml
+  - include/mender-explicit-ab.yml
 
 # Boot U-Boot as an EFI application under OVMF on qemux86-64 (wrynose), for a
 # GPLv3-free A/B boot chain managed by the Mender server:
@@ -71,21 +72,12 @@ local_conf_header:
     QB_KERNEL_ROOT = "/dev/sda3"
 
   mender: |
-    # Mender A/B update features -- set globally (local.conf) so that recipes
-    # like mender-connect also see them, not only the image recipe which
-    # inherits mender-explicit-wic.
-    MENDER_FEATURES_ENABLE:append = " \
-        mender-uboot \
-        mender-auth-install \
-        mender-update-install \
-        mender-systemd \
-    "
-    MENDER_FEATURES_DISABLE:append = " \
-        mender-image \
-        mender-part-images \
-        mender-growfs-data \
-        mender-grub \
-    "
+    # The common family-A skeleton (auth/update/systemd enable; image/part-images/
+    # grub/growfs-data disable) comes from include/mender-explicit-ab.yml, set
+    # globally so recipes like mender-connect see it too. This demo additionally
+    # ENABLEs mender-uboot (U-Boot is the EFI-app bootloader here), which is the
+    # one place family A keeps mender-uboot on rather than disabling it.
+    MENDER_FEATURES_ENABLE:append = " mender-uboot"
 
     PREFERRED_PROVIDER_mender-native =  "mender-native"
     PREFERRED_RPROVIDER_mender-auth =   "mender"
