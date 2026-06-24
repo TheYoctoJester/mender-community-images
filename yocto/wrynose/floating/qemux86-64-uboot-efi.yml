@@ -32,6 +32,7 @@ repos:
     layers:
       meta-mender-explicit-wic:
       meta-mender-x86-uboot-efi:
+      meta-mender-demos-common:
 
 local_conf_header:
   mender-artifact: |
@@ -107,7 +108,7 @@ local_conf_header:
     # Persist Mender state on /data so the post-reboot ArtifactCommit survives
     # the A/B rootfs swap (mender-explicit-wic disables mender-image, which
     # would otherwise relocate /var/lib/mender to the data partition).
-    IMAGE_INSTALL:append = " mender-x86-efi-data"
+    IMAGE_INSTALL:append = " mender-data-persist"
     IMAGE_INSTALL:remove = "kernel-devicetree"
     EXTRA_IMAGEDEPENDS += "ovmf"
 

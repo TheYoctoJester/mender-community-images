@@ -109,10 +109,8 @@ local_conf_header:
     # can always read/write the u-boot environment (cf. qemuarm64-rauc.yml).
     IMAGE_INSTALL:append = " u-boot-env"
 
-    # meta-mender's version-inventory-script (6.0.0) fails do_package QA on
-    # wrynose: it installs /usr/share/mender/inventory/mender-inventory-client-version
-    # but does not ship it. Not needed here; drop it from the client PACKAGECONFIG.
-    PACKAGECONFIG:remove:pn-mender = "version-inventory-script version-inventory-script-strict"
+    # (The version-inventory-script do_package QA workaround now lives in
+    # meta-mender-client-only's mender_%.bbappend, shared by all client-only demos.)
 
     # Bump between releases (rauc-raspberrypi4-64-1 -> -2 ...) so deployments on
     # the Mender server are meaningful. The deployed bundle artifact is

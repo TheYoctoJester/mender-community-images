@@ -28,6 +28,7 @@ repos:
     branch: wrynose-demos
     layers:
       meta-mender-efibootmgr:
+      meta-mender-demos-common:
 
 local_conf_header:
   mender-artifact: |

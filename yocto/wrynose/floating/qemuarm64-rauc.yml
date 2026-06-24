@@ -89,11 +89,8 @@ local_conf_header:
     # RAUC's u-boot env access.
     IMAGE_INSTALL:append = " u-boot-env"
 
-    # meta-mender's version-inventory-script (6.0.0) fails do_package QA on
-    # wrynose: it installs /usr/share/mender/inventory/mender-inventory-client-version
-    # but does not ship it. It only reports the mender_client_version inventory
-    # attribute and is not needed here; drop it from the client PACKAGECONFIG.
-    PACKAGECONFIG:remove:pn-mender = "version-inventory-script version-inventory-script-strict"
+    # (The version-inventory-script do_package QA workaround now lives in
+    # meta-mender-client-only's mender_%.bbappend, shared by all client-only demos.)
 
     # Bump between releases (release-1 -> release-2 ...) so deployments on the
     # Mender server are meaningful.
