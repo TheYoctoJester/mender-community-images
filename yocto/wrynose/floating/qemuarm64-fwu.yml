@@ -141,7 +141,12 @@ local_conf_header:
     MENDER_INVENTORY_POLL_INTERVAL_SECONDS = "5"
     MENDER_RETRY_POLL_INTERVAL_SECONDS = "30"
 
-    MENDER_DEVICE_TYPES_COMPATIBLE = "qemuarm64-secureboot"
+    # Report an FWU-specific device_type rather than the bare machine name, so
+    # the OTA test can tell this demo apart from the UKI demo (which shares the
+    # qemuarm64-secureboot machine, hence the same deploy-images dir). The
+    # deployed artifact carries the same compatible type.
+    MENDER_DEVICE_TYPE = "qemuarm64-fwu"
+    MENDER_DEVICE_TYPES_COMPATIBLE = "qemuarm64-fwu"
 
     # Baked-in artifact name. Bump between builds (fwu-wrynose-v1 ->
     # fwu-wrynose-v2 ...) so deployments on hosted.mender.io are

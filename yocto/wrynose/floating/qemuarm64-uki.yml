@@ -83,9 +83,15 @@ local_conf_header:
     MENDER_INVENTORY_POLL_INTERVAL_SECONDS = "5"
     MENDER_RETRY_POLL_INTERVAL_SECONDS = "30"
 
+    # Report a UKI-specific device_type rather than the bare machine name, so
+    # the OTA test can tell this demo apart from the FWU demo (which shares the
+    # qemuarm64-secureboot machine, hence the same deploy-images dir). The
+    # deployed artifact carries the same compatible type.
+    MENDER_DEVICE_TYPE = "qemuarm64-uki"
+    MENDER_DEVICE_TYPES_COMPATIBLE = "qemuarm64-uki"
+
     # Bump MENDER_ARTIFACT_NAME between builds (release-1 -> release-2 ...)
     # so deployments on hosted.mender.io are meaningful.
-    MENDER_DEVICE_TYPES_COMPATIBLE = "qemuarm64-secureboot"
     MENDER_ARTIFACT_NAME = "release-1"
 
     # Runtime device paths read by mender-client. qemuarm64-secureboot's
