@@ -79,7 +79,11 @@ local_conf_header:
 
     IMAGE_INSTALL:append = " mender-barebox-data libubootenv-bin"
 
-    WKS_FILE = "mender-barebox-raspberrypi4-64.wks.in"
+    # Shared barebox A/B layout; ONDISK/ALIGN parameterise it per board. The
+    # --ondisk name is build-time only (runtime resolves by GPT partlabel).
+    WKS_FILE = "mender-barebox.wks.in"
+    MENDER_BAREBOX_ONDISK = "mmcblk0"
+    MENDER_BAREBOX_ALIGN = "4096"
     IMAGE_FSTYPES:pn-core-image-minimal:append = " wic mender"
 
     MENDER_DEVICE_TYPE = "raspberrypi4-64-barebox"

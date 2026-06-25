@@ -61,7 +61,10 @@ local_conf_header:
 
     IMAGE_INSTALL:append = " mender-barebox-data libubootenv-bin"
 
-    WKS_FILE = "mender-barebox-qemuarm64.wks.in"
+    # Shared barebox A/B layout; ONDISK/ALIGN parameterise it per board.
+    WKS_FILE = "mender-barebox.wks.in"
+    MENDER_BAREBOX_ONDISK = "vda"
+    MENDER_BAREBOX_ALIGN = "1024"
     IMAGE_FSTYPES:pn-core-image-minimal:append = " wic mender"
 
     # Device type must match the artifact's compatible-device list.
