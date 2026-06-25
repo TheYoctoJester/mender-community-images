@@ -21,6 +21,15 @@ header:
 #     oe-core's uki.bbclass; meta-mender-uki replaces that pathway
 #     without touching meta-mender itself.
 
+# Forward MENDER_TENANT_TOKEN from the build environment into bitbake. kas
+# sanitises the environment and only passes through variables declared here, so
+# without this the CI-provided secret never reaches meta-mender and the image
+# bakes the "dummy" placeholder token -- the device then cannot enrol on
+# hosted.mender.io and the OTA test fails. The "dummy" default keeps local
+# builds (which set no token, or override it in a local file) working.
+env:
+  MENDER_TENANT_TOKEN: "dummy"
+
 machine: qemuarm64-secureboot
 
 repos:
@@ -60,6 +69,19 @@ local_conf_header:
     # each layer's files/wic/ via BBPATH); see image_types_wic.bbclass.
     WKS_FILE = "efi-uki-mender-bootdisk.wks.in"
     IMAGE_FSTYPES:pn-core-image-minimal:append = " wic mender"
+
+    # Point the client at hosted.mender.io. Without this, meta-mender defaults
+    # ServerURL to the docker.mender.io placeholder, which does not resolve:
+    # mender-authd never authenticates and the device never enrols. The tenant
+    # token is injected separately by CI (MENDER_TENANT_TOKEN, see env: above);
+    # only the non-secret URL is committed here.
+    MENDER_SERVER_URL = "https://hosted.mender.io"
+
+    # Poll fast so the OTA round-trip completes inside the test window (the
+    # meta-mender defaults are 30 min). Demo-only cadence.
+    MENDER_UPDATE_POLL_INTERVAL_SECONDS = "5"
+    MENDER_INVENTORY_POLL_INTERVAL_SECONDS = "5"
+    MENDER_RETRY_POLL_INTERVAL_SECONDS = "30"
 
     # Bump MENDER_ARTIFACT_NAME between builds (release-1 -> release-2 ...)
     # so deployments on hosted.mender.io are meaningful.
