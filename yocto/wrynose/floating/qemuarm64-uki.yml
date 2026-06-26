@@ -54,6 +54,16 @@ local_conf_header:
     QB_DEFAULT_KERNEL = "none"
     QEMU_USE_KVM = ""
 
+    # Build the initramfs in its own multiconfig so it gets a dedicated deploy
+    # dir rather than sharing core-image-minimal's (which let the initramfs
+    # .cpio.gz go missing from the shared deploy dir on rebuilds, breaking
+    # do_uki). uki-mender-ab.bbclass pulls it via mcdepends and stages it for
+    # ukify. The multiconfig (meta-mender-uki/conf/multiconfig/uki-initramfs.conf)
+    # only redirects TMPDIR; the rest is inherited from this local.conf.
+    BBMULTICONFIG = "uki-initramfs"
+    INITRAMFS_MULTICONFIG = "uki-initramfs"
+    INITRAMFS_DEPLOY_DIR_IMAGE = "${TOPDIR}/tmp-uki-initramfs/deploy/images/${MACHINE}"
+
   mender: |
     DISTRO_FEATURES:append = " systemd"
 
