@@ -1,0 +1,108 @@
+header:
+  version: 14
+  includes:
+  - include/mender-base.yml
+
+# Manage an OSTree-updated system from the Mender server, on qemuarm64 (wrynose).
+# OSTree stays the on-device atomic-update engine (read-only rootfs, /var split,
+# deployments selected by the bootloader); the Mender client runs in client-only
+# mode and a custom "ostree" Update Module applies an OSTree static delta and
+# deploys the new commit. mender-full is off. See the meta-mender-ostree layer
+# README in meta-mender-community at branch wrynose-demos.
+#
+# The OSTree-ification (sota / image_types_ostree) comes from meta-updater; the
+# Uptane/aktualizr client is stripped out (this demo's management plane is
+# Mender, not Uptane). qemuarm64 + U-Boot machine glue is provided by
+# meta-mender-ostree (meta-updater ships no sota_qemuarm64).
+#
+# MENDER_SERVER_URL is committed (hosted.mender.io, not a secret). The tenant
+# token IS a secret: CI injects MENDER_TENANT_TOKEN (see env:), local builds get
+# the "dummy" default or a local override.
+
+env:
+  MENDER_TENANT_TOKEN: "dummy"
+
+machine: qemuarm64-ostree
+
+target:
+  - all-images
+
+repos:
+  # OSTree/sota integration (image_types_ostree, image_types_ota, ostree native).
+  # Pinned to the wrynose tip at authoring time -- the wrynose branch currently
+  # tracks master, so pin for reproducibility rather than float.
+  meta-updater:
+    url: https://github.com/uptane/meta-updater.git
+    commit: f0e1ccafaa877d2781ed953236981dac57439dc8
+
+  # runqemu must boot via u-boot.bin (QB_DEFAULT_KERNEL=none) rather than a
+  # -kernel injection, so the OSTree boot script runs; same oe-core fix the
+  # swupdate demo uses. openembedded-core itself is pulled by mender-base.yml.
+  openembedded-core:
+    patches:
+      qemuboot-none-fix:
+        repo: meta-mender-community
+        path: patches/openembedded-core/0001-qemuboot-handle-QB_DEFAULT_KERNEL-none-properly.patch
+
+  # sota LAYERDEPENDS: openembedded-layer, meta-python, filesystems-layer.
+  # meta-oe is already pulled by include/mender-base.yml; kas merges these in.
+  meta-openembedded:
+    layers:
+      meta-python:
+      meta-networking:
+      meta-filesystems:
+
+  # Mender client (client-only) + the OSTree<->Mender glue (qemuarm64-ostree
+  # machine, the "ostree" Update Module, the v2 static-delta payload).
+  meta-mender-community:
+    url: https://github.com/theyoctojester/meta-mender-community.git
+    branch: wrynose-demos
+    layers:
+      meta-mender-client-only:
+      meta-mender-ostree:
+
+local_conf_header:
+  sota-enable: |
+    # Enable meta-updater's OSTree integration (equivalent to requiring
+    # conf/distro/sota.conf.inc). SOTA_MACHINE=none: meta-updater has no
+    # sota_qemuarm64; the qemuarm64 + U-Boot glue lives in meta-mender-ostree.
+    DISTRO_FEATURES:append = " sota usrmerge"
+    DISTRO_FEATURES_NATIVE:append = " sota"
+    INHERIT += "sota"
+    SOTA_MACHINE = "none"
+
+  ostree: |
+    OSTREE_BOOTLOADER = "u-boot"
+    OSTREE_OSNAME = "mender-ostree"
+    OSTREE_BRANCHNAME = "qemuarm64-ostree"
+    # OSTree deployment root = the otaimage rootfs partition (vda2; vda1 is /boot).
+    # Use root= (not ostree_root=): the initramfs-framework rootfs module mounts
+    # root= at ROOTFS_DIR, then the ostree module runs ostree-prepare-root on it.
+    # OSTree appends the ostree=<deployment> arg itself. console= is baked in for
+    # serial output under runqemu (OSTree's bootargs carry no console otherwise).
+    OSTREE_KERNEL_ARGS = "ramdisk_size=16384 rw rootfstype=ext4 rootwait root=/dev/vda2 console=ttyAMA0,115200"
+
+    # Strip the Uptane/aktualizr client: sota.bbclass hard-appends
+    # "aktualizr aktualizr-info ${SOTA_CLIENT_PROV}" to IMAGE_INSTALL:sota, so
+    # clearing SOTA_CLIENT_PROV is not enough -- also remove the two packages.
+    SOTA_CLIENT_PROV = ""
+    IMAGE_INSTALL:remove = "aktualizr aktualizr-info"
+
+  mender: |
+    DISTRO_FEATURES:append = " systemd"
+
+    # Point the client at hosted.mender.io; the tenant token is injected by CI
+    # (MENDER_TENANT_TOKEN, see env:). Without a real ServerURL the device never
+    # enrols and the OTA test cannot proceed.
+    MENDER_SERVER_URL = "https://hosted.mender.io"
+    MENDER_EFI_LOADER = ""
+
+    # Poll fast so the OTA round-trip completes inside the CI window. Demo-only.
+    MENDER_UPDATE_POLL_INTERVAL_SECONDS = "5"
+    MENDER_INVENTORY_POLL_INTERVAL_SECONDS = "5"
+    MENDER_RETRY_POLL_INTERVAL_SECONDS = "30"
+
+    MENDER_DEVICE_TYPES_COMPATIBLE = "qemuarm64-ostree"
+    # Bump between builds (ostree-wrynose-v1 -> ostree-wrynose-v2 ...). The
+    # build-time v2 static delta in meta-mender-ostree carries the actual update.
+    MENDER_ARTIFACT_NAME = "ostree-wrynose-v1"
