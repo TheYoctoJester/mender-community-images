@@ -72,6 +72,13 @@ repos:
       meta-mender-swupdate:
 
 local_conf_header:
+  qemu-net-mac: |
+    # Distinct QEMU slirp MAC -> own Mender device identity. runqemu's slirp
+    # MAC (52:54:00:12:35:02) only varies by host TCP-port contention, so demos
+    # on different CI runner hosts otherwise share one identity and collide in
+    # concurrent OTA runs. A literal MAC (no @MAC@) is kept verbatim by runqemu.
+    # Must match --mac-prefix for this board in build-yocto-wrynose-demo.yml.
+    QB_NETWORK_DEVICE = "-device virtio-net-pci,netdev=net0,mac=52:54:00:12:35:a3"
   no-full-client: |
     MENDER_EFI_LOADER = ""
     MENDER_UPDATE_POLL_INTERVAL_SECONDS = "5"
