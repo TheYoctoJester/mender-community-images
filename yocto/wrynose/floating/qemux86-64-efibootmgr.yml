@@ -33,7 +33,7 @@ repos:
 
 local_conf_header:
   mender-artifact: |
-    MENDER_ARTIFACT_NAME = "efibootmgr-demo"
+    MENDER_ARTIFACT_NAME = "efibootmgr-wrynose-v1"
     MENDER_DEVICE_TYPE = "qemux86-64-efibootmgr"
     IMAGE_FSTYPES:prepend = "ext4 "
 

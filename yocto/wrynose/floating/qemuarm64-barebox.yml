@@ -32,7 +32,7 @@ repos:
 
 local_conf_header:
   mender-artifact: |
-    MENDER_ARTIFACT_NAME = "barebox-1"
+    MENDER_ARTIFACT_NAME = "barebox-wrynose-v1"
 
   barebox: |
     # barebox is the bootloader; pull it into the image deploy. oe-core's

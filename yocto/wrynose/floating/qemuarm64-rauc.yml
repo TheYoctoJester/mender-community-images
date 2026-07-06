@@ -16,10 +16,18 @@ header:
 #     qemuarm64 + u-boot bootscript + pflash bootenv), not meta-mender's own
 #     EFI/grub qemu integration; RAUC owns the rootfs, so mender-full is off.
 #
-# Server URL and tenant token are intentionally not committed; provide them in
-# a local override to connect to your Mender server, e.g.:
-#   MENDER_SERVER_URL = "https://hosted.mender.io"
-#   MENDER_TENANT_TOKEN = "<your token>"
+# MENDER_SERVER_URL is committed below (hosted.mender.io -- not a secret). The
+# tenant token IS a secret: CI injects MENDER_TENANT_TOKEN (see the env: block),
+# and a local build gets the "dummy" default or a local override.
+
+# Forward MENDER_TENANT_TOKEN from the build environment into bitbake. kas
+# sanitises the environment and only passes through variables declared here, so
+# without this the CI-provided secret never reaches meta-mender and the image
+# bakes the "dummy" placeholder -- the device then cannot enrol on
+# hosted.mender.io and the OTA test fails. The "dummy" default keeps local
+# builds (which set no token, or override it locally) working.
+env:
+  MENDER_TENANT_TOKEN: "dummy"
 
 machine: qemuarm64
 
@@ -57,6 +65,16 @@ bblayers_conf_header:
     LAYERSERIES_COMPAT_meta-rauc-qemuarm:append = " wrynose"
 
 local_conf_header:
+  qemu-net-mac: |
+    # Distinct QEMU slirp MAC -> own Mender device identity. runqemu's slirp
+    # MAC (52:54:00:12:35:02) only varies by host TCP-port contention, so demos
+    # on different CI runner hosts otherwise share one identity and collide in
+    # concurrent OTA runs. A literal MAC (no @MAC@) is kept verbatim by runqemu.
+    # MAC registry across the OTA demos: a1=uki a2=fwu a3=swupdate a4=ostree
+    # a5=rauc. :forcevariable because local.conf is parsed before the machine
+    # conf (qemuarm64.conf pins QB_NETWORK_DEVICE with a hard "="). Must match
+    # --mac-prefix / ota_mac for this board in build-yocto-wrynose-demo.yml.
+    QB_NETWORK_DEVICE:forcevariable = "-device virtio-net-pci,netdev=net0,mac=52:54:00:12:35:a5"
   rauc-machine: |
     # RAUC A/B machine config (from meta-rauc-qemuarm's kas-qemuarm.yml).
     PREFERRED_PROVIDER_virtual/bootloader = "u-boot"
@@ -92,9 +110,22 @@ local_conf_header:
     # (The version-inventory-script do_package QA workaround now lives in
     # meta-mender-client-only's mender_%.bbappend, shared by all client-only demos.)
 
-    # Bump between releases (release-1 -> release-2 ...) so deployments on the
-    # Mender server are meaningful.
-    MENDER_ARTIFACT_NAME = "rauc-qemuarm64-1"
+    # Point the client at hosted.mender.io. Without this, meta-mender defaults
+    # ServerURL to the docker.mender.io placeholder, which does not resolve:
+    # mender-authd never authenticates and the device never enrols. The tenant
+    # token is injected separately by CI (MENDER_TENANT_TOKEN, see env: above);
+    # only the non-secret URL is committed here.
+    MENDER_SERVER_URL = "https://hosted.mender.io"
+
+    # Poll fast so the OTA round-trip completes inside the CI window. Demo-only.
+    MENDER_UPDATE_POLL_INTERVAL_SECONDS = "5"
+    MENDER_INVENTORY_POLL_INTERVAL_SECONDS = "5"
+    MENDER_RETRY_POLL_INTERVAL_SECONDS = "30"
+
+    # Initial (v1) artifact name the running system reports; CI deploys a
+    # uniquely-named v2 so the deployment is a real update. Standardized to the
+    # <demo>-wrynose-v1 pattern shared by the other OTA demos.
+    MENDER_ARTIFACT_NAME = "rauc-wrynose-v1"
 
 target:
   - core-image-minimal

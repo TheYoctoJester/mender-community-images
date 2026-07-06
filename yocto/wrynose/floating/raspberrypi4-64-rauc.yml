@@ -115,7 +115,7 @@ local_conf_header:
     # Bump between releases (rauc-raspberrypi4-64-1 -> -2 ...) so deployments on
     # the Mender server are meaningful. The deployed bundle artifact is
     # rauc-raspberrypi4-64-2 (see update-bundle-mender's MENDER_RAUC_ARTIFACT_NAME).
-    MENDER_ARTIFACT_NAME = "rauc-raspberrypi4-64-1"
+    MENDER_ARTIFACT_NAME = "rauc-rpi4-wrynose-v1"
 
     # Short poll intervals: this is a demo / CI-test image, so a server-driven
     # deployment should be detected within seconds rather than the meta-mender

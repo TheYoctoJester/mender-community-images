@@ -107,9 +107,10 @@ local_conf_header:
     MENDER_DEVICE_TYPE = "qemuarm64-uki"
     MENDER_DEVICE_TYPES_COMPATIBLE = "qemuarm64-uki"
 
-    # Bump MENDER_ARTIFACT_NAME between builds (release-1 -> release-2 ...)
-    # so deployments on hosted.mender.io are meaningful.
-    MENDER_ARTIFACT_NAME = "release-1"
+    # Initial (v1) artifact name the running system reports; CI deploys a
+    # uniquely-named v2 so the deployment is a real update. Standardized to the
+    # <demo>-wrynose-v1 pattern shared by the other OTA demos.
+    MENDER_ARTIFACT_NAME = "uki-wrynose-v1"
 
     # Runtime device paths read by mender-client. qemuarm64-secureboot's
     # rootfs lives on /dev/vda (virtio).

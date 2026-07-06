@@ -39,7 +39,7 @@ repos:
 
 local_conf_header:
   mender-artifact: |
-    MENDER_ARTIFACT_NAME = "barebox-1"
+    MENDER_ARTIFACT_NAME = "barebox-rpi4-wrynose-v1"
 
   raspberrypi: |
     # barebox replaces U-Boot on this board: do NOT enable RPI_USE_U_BOOT.

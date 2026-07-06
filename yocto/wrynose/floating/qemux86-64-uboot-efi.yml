@@ -37,7 +37,7 @@ repos:
 
 local_conf_header:
   mender-artifact: |
-    MENDER_ARTIFACT_NAME = "x86-uboot-efi-demo"
+    MENDER_ARTIFACT_NAME = "uboot-efi-wrynose-v1"
     IMAGE_FSTYPES:prepend = "ext4 "
 
   uboot-efi: |
