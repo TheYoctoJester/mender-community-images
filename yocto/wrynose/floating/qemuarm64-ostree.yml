@@ -68,7 +68,7 @@ local_conf_header:
     # on different CI runner hosts otherwise share one identity and collide in
     # concurrent OTA runs. A literal MAC (no @MAC@) is kept verbatim by runqemu.
     # Must match --mac-prefix for this board in build-yocto-wrynose-demo.yml.
-    QB_NETWORK_DEVICE = "-device virtio-net-pci,netdev=net0,mac=52:54:00:12:35:a4"
+    QB_NETWORK_DEVICE:forcevariable = "-device virtio-net-pci,netdev=net0,mac=52:54:00:12:35:a4"
   sota-enable: |
     # Enable meta-updater's OSTree integration (equivalent to requiring
     # conf/distro/sota.conf.inc). SOTA_MACHINE=none: meta-updater has no
