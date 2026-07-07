@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/siemens/kas/master/kas/schema-kas.json
+#
+# Qualcomm (qualcomm-linux) BSP base for Mender-enabled images.
+#
+# Unlike the other boards in this repo, the Qualcomm flow does NOT use the
+# poky/core-image-minimal base (include/mender-base.yml). It follows meta-qcom's
+# own `nodistro` build: this include pulls meta-qcom's `ci/base.yml` verbatim
+# (distro nodistro, openembedded-core, bitbake, the qcomflash image type and
+# core-image-base target) so the layer graph matches what meta-qcom ships and
+# tests, then adds meta-qcom-3rdparty (board MACHINEs) and meta-oe.
+#
+# NB: meta-qcom tracks `master` (fast-moving); this is the floating tree, so no
+# commit pins here. A tagged variant should pin revisions.
+
+header:
+  version: 14
+  includes:
+    - repo: meta-qcom
+      file: ci/base.yml
+
+repos:
+  meta-qcom:
+    url: https://github.com/qualcomm-linux/meta-qcom
+    branch: master
+
+  # Board MACHINEs (incl. uno-q), partition tables, firmware, kernel and u-boot.
+  meta-qcom-3rdparty:
+    url: https://github.com/qualcomm-linux/meta-qcom-3rdparty
+    branch: main
+
+  # meta-qcom recommends openembedded-layer; pulled explicitly for meta-oe.
+  meta-openembedded:
+    url: https://github.com/openembedded/meta-openembedded
+    branch: master
+    layers:
+      meta-oe:

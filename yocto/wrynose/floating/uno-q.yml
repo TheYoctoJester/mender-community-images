@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/siemens/kas/master/kas/schema-kas.json
+#
+# Arduino Uno Q (Qualcomm Dragonwing QRB2210, MACHINE uno-q) with Mender OTA.
+#
+# A/B rootfs updates reuse the platform's native Qualcomm boot slots
+# (ABL + qbootctl) driven by a custom Mender Update Module (qbootctl-rootfs),
+# rather than Mender's dual-rootfs + U-Boot/GRUB integration. The recipes live
+# in meta-mender-qcom (meta-mender-community). Verified end-to-end on hardware
+# (OTA + rollback) against Hosted Mender.
+#
+# Server URL / tenant token and network credentials are intentionally NOT baked
+# in here (site-specific); configure them at runtime or via a local overlay.
+
+header:
+  version: 14
+  includes:
+    - include/qcom.yml
+
+repos:
+  meta-mender:
+    url: https://github.com/mendersoftware/meta-mender.git
+    branch: wrynose            # LAYERSERIES_COMPAT_mender = "wrynose"
+    layers:
+      meta-mender-core:
+
+  # TODO: repoint to mendersoftware/meta-mender-community:wrynose once the
+  # meta-mender-qcom layer PR (mendersoftware/meta-mender-community#517) merges.
+  meta-mender-community:
+    url: https://github.com/theyoctojester/meta-mender-community.git
+    branch: mender-qcom-uno-q
+    layers:
+      meta-mender-qcom:
+
+machine: uno-q
+
+local_conf_header:
+  mender-client: |
+    # Client only: mender-auth + mender-update (+ systemd). Deliberately NOT
+    # mender-image / mender-uboot / mender-grub / mender-growfs-data, so no
+    # Mender partition-layout assumptions are made (the qcom A/B layout is used).
+    MENDER_FEATURES_ENABLE:append = " mender-auth-install mender-update-install mender-systemd"
+    MENDER_DEVICE_TYPE = "uno-q"
+    MENDER_ARTIFACT_NAME = "gha_autobuild"
+    IMAGE_INSTALL:append = " mender-connect"
+    # meta-mender adds mender_update_fstab_file to ROOTFS_POSTPROCESS_COMMAND
+    # unconditionally (even without mender-image); it writes /data + boot-part
+    # fstab entries for partitions this qcom layout does not have -> mount fails
+    # -> Emergency Mode. The A/B integration mounts /data itself (see below).
+    ROOTFS_POSTPROCESS_COMMAND:remove = "mender_update_fstab_file"
+    MENDER_DATA_PART_FSTAB_OPTS = "defaults,nofail,x-systemd.device-timeout=2"
+
+  qcom-ab: |
+    # Slotted layout (system_a/system_b + userdata + dtbo_a/dtbo_b) instead of a
+    # single rootfs. dtbo_a/_b are required by qbootctl's set-active path.
+    QCOM_PARTITION_FILES_SUBDIR = "partitions/qrb2210-unoq/system-ab"
+    # Slot-aware initramfs embedded in the UKI: reads the active slot (qbootctl)
+    # and mounts system_<slot>; self-heals to the other slot on a bad update.
+    # The fallback root= below is overridden at runtime by the 86-abslot module.
+    INITRAMFS_IMAGE = "unoq-initramfs-ab"
+    QCOM_BOOTIMG_ROOTFS = "PARTLABEL=system_a"
+    # Persistent /data (Mender state), bless-boot gating, and the
+    # qbootctl-rootfs Mender Update Module.
+    IMAGE_INSTALL:append = " unoq-ab-integration"
