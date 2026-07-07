@@ -61,3 +61,11 @@ local_conf_header:
     # Persistent /data (Mender state), bless-boot gating, and the
     # qbootctl-rootfs Mender Update Module.
     IMAGE_INSTALL:append = " unoq-ab-integration"
+
+  qcom-mcu: |
+    # STM32U585 MCU firmware updates: ship OpenOCD (SWD flasher) + the zephyr-mcu
+    # Mender Update Module. Building the MCU firmware itself needs meta-zephyr and
+    # is a separate step (see uno-q-mcu-firmware.yml); the image only needs the
+    # flasher + module. OpenOCD's linuxgpiod uses the libgpiod v1 API here.
+    PREFERRED_VERSION_libgpiod = "1.6.5"
+    IMAGE_INSTALL:append = " openocd unoq-mcu-integration"

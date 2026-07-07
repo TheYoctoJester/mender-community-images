@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/siemens/kas/master/kas/schema-kas.json
+#
+# Builds the Arduino Uno Q's STM32U585 MCU firmware (Zephyr) alongside the uno-q
+# Linux image, as a separate "mcu" multiconfig (Cortex-M33). The firmware is the
+# payload for a Mender "zephyr-mcu" artifact; the image itself only needs the
+# flasher + module (already in uno-q.yml).
+#
+# Extends uno-q.yml with meta-zephyr + meta-python + the mcu multiconfig, and adds
+# the firmware build target. The arduino-uno-q MACHINE, the mcu multiconfig conf,
+# and the zephyr-unoq-blink demo app all come from meta-mender-qcom (its
+# dynamic-layers/zephyrcore recipes parse once meta-zephyr is present).
+#
+#   kas build yocto/wrynose/floating/uno-q-mcu-firmware.yml
+# then package the firmware as an artifact:
+#   mender-artifact write module-image -T zephyr-mcu -n unoq-mcu-v1 -t uno-q \
+#     -f tmp/deploy/images/arduino-uno-q/zephyr-unoq-blink-arduino-uno-q.hex
+
+header:
+  version: 14
+  includes:
+    - uno-q.yml
+
+repos:
+  meta-zephyr:
+    url: https://git.yoctoproject.org/meta-zephyr
+    branch: wrynose
+    layers:
+      meta-zephyr-core:
+
+  # meta-zephyr-core depends on meta-python (meta-oe is added by include/qcom.yml).
+  meta-openembedded:
+    layers:
+      meta-python:
+
+local_conf_header:
+  unoq-mcu-multiconfig: |
+    # conf/multiconfig/mcu.conf ships in meta-mender-qcom (MACHINE = arduino-uno-q).
+    BBMULTICONFIG = "mcu"
+
+target:
+  - core-image-base
+  - mc:mcu:zephyr-unoq-blink
