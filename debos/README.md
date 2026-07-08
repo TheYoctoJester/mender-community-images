@@ -22,6 +22,9 @@ debos/
 
 ## qemuarm64-debos-ab
 
+**Status: verified end-to-end** (in-job qemu OTA on hosted.mender.io,
+CI run #2469, deployment finished with success=1).
+
 Debian **trixie** / arm64, UEFI (AAVMF/OVMF) + GRUB, A/B rootfs via
 `grub-mender-grubenv`, Mender client (`mender-client4`) from the Mender APT
 repository. GPT layout: ESP · rootfsA · rootfsB · data (`/var/lib/mender`,
@@ -35,8 +38,8 @@ debos -t tenant_token:<HOSTED_MENDER_TENANT_TOKEN> \
     floating/qemuarm64/qemuarm64-debos-ab.yaml
 ```
 
-In CI the runners have no `/dev/kvm`, so the build uses
-`debos --disable-fakemachine` under a privileged container; see
+In CI the runners have no `/dev/kvm`, so the build uses debos's software
+fakemachine backend (`debos -b qemu`) under a privileged container; see
 `mender-integration-builds/.forgejo/workflows/build-debos-demo.yml`.
 
 Templated variables (`-t key:value`): `tenant_token`, `suite`, `device_type`,
