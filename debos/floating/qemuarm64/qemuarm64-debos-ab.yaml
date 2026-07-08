@@ -1,0 +1,187 @@
+---
+# qemuarm64 Debian A/B Mender demo, built with debos.
+#
+# Produces a UEFI/GRUB, A/B-partitioned Debian (trixie) image for qemuarm64 with
+# the Mender client (mender-client4) installed from the Mender APT repository and
+# GRUB integrated for atomic rootfs A/B switching via grub-mender-grubenv. The
+# demo is driven by a full in-job qemu OTA round-trip in CI (see
+# mender-integration-builds/.forgejo/workflows/build-debos-demo.yml).
+#
+# Disk layout (GPT, /dev/vda under qemu virtio-blk):
+#   p1  ESP    (fat32) -> /boot/efi   : BOOTAA64.EFI + mender grub.cfg + grubenv
+#   p2  rootfsA (ext4) -> /           : active root (populated at build time)
+#   p3  rootfsB (ext4) -> (none)      : inactive Mender slot (client writes it)
+#   p4  data   (ext4)  -> /var/lib/mender : persistent Mender state (survives A/B)
+#
+# Boot: UEFI (AAVMF/OVMF) -> BOOTAA64.EFI (grub-mkimage, prefix /EFI/BOOT) ->
+#       mender grub.cfg -> grub-mender-grubenv chooses rootfsA/rootfsB ->
+#       Debian kernel+initrd. Verified end-to-end (qemu OTA A->B, success=1).
+#
+# Build (local, kvm):   debos -t tenant_token:<TOKEN> qemuarm64-debos-ab.yaml
+# Build (CI, no kvm):   debos --disable-fakemachine -t tenant_token:<TOKEN> ...
+{{- $architecture := or .architecture "arm64" }}
+{{- $suite := or .suite "trixie" }}
+{{- $device_type := or .device_type "qemuarm64-debos" }}
+{{- $artifact_name := or .artifact_name "debos-ab-v1" }}
+{{- $server_url := or .server_url "https://hosted.mender.io" }}
+{{- $tenant_token := or .tenant_token "" }}
+{{- $imagename := or .imagename "debos-debian-ab-qemuarm64.img" }}
+{{- $imagesize := or .imagesize "5G" }}
+
+architecture: {{ $architecture }}
+
+actions:
+  - action: debootstrap
+    description: Bootstrap Debian {{ $suite }} ({{ $architecture }})
+    suite: {{ $suite }}
+    components:
+      - main
+    mirror: https://deb.debian.org/debian
+    variant: minbase
+    merged-usr: true
+
+  - action: apt
+    description: Install base system, kernel, GRUB tooling and Mender prerequisites
+    packages:
+      - linux-image-arm64
+      - initramfs-tools
+      - grub-efi-arm64-bin
+      - grub-common
+      - make
+      - systemd-sysv
+      - systemd-resolved
+      - systemd-timesyncd
+      - udev
+      - dbus
+      - dbus-user-session
+      - libpam-systemd
+      - ca-certificates
+      - curl
+      - e2fsprogs
+      - dosfstools
+      - openssh-server
+
+  - action: run
+    description: Configure hostname, serial console, networking and boot symlinks
+    chroot: true
+    script: scripts/configure-system.sh
+
+  - action: run
+    description: Add the Mender APT repository and install mender-client4
+    chroot: true
+    command: |
+      set -eu
+      arch="$(dpkg --print-architecture)"
+      curl -fsSL https://downloads.mender.io/repos/debian/gpg \
+        -o /etc/apt/trusted.gpg.d/mender.asc
+      echo "deb [arch=${arch}] https://downloads.mender.io/repos/device-components debian/{{ $suite }}/stable main" \
+        > /etc/apt/sources.list.d/mender.list
+      apt-get update
+      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends mender-client4
+      # Enable the Mender services (names differ across client generations).
+      systemctl enable mender-updated.service 2>/dev/null || true
+      systemctl enable mender-authd.service 2>/dev/null || true
+      systemctl enable mender-client.service 2>/dev/null || true
+
+  - action: run
+    description: Write Mender client configuration and identity
+    chroot: false
+    command: |
+      set -eu
+      install -d -m 755 "${ROOTDIR}/etc/mender" "${ROOTDIR}/var/lib/mender"
+      cat > "${ROOTDIR}/etc/mender/mender.conf" <<'MENDERCONF'
+      {
+        "ServerURL": "{{ $server_url }}",
+        "TenantToken": "{{ $tenant_token }}",
+        "RootfsPartA": "/dev/vda2",
+        "RootfsPartB": "/dev/vda3",
+        "UpdatePollIntervalSeconds": 5,
+        "InventoryPollIntervalSeconds": 5,
+        "RetryPollIntervalSeconds": 30
+      }
+      MENDERCONF
+      echo "device_type={{ $device_type }}" > "${ROOTDIR}/var/lib/mender/device_type"
+      echo "artifact_name={{ $artifact_name }}" > "${ROOTDIR}/etc/mender/artifact_info"
+
+{{- if .make_ospack }}
+  - action: pack
+    description: Snapshot the pre-GRUB rootfs (local iteration cache; pass -t make_ospack:1)
+    file: ospack-debos-trixie-arm64.tar.gz
+    compression: gz
+{{- end }}
+
+  - action: run
+    description: Install GRUB (grub-mender-grubenv A/B) into the rootfs tree
+    chroot: true
+    script: scripts/install-grub-mender-ab.sh
+
+  - action: run
+    description: Write the A/B fstab (label-based; root comes from the GRUB cmdline)
+    chroot: false
+    command: |
+      set -eu
+      # Mount the shared partitions by LABEL, not UUID: the same rootfs image is
+      # written to both A and B, and labels stay constant across builds/slots
+      # whereas UUIDs do not. No "/" entry -- GRUB (grub-mender-grubenv) supplies
+      # root= for the active slot.
+      cat > "${ROOTDIR}/etc/fstab" <<'FSTAB'
+      # <file system>   <mount point>     <type>  <options>            <dump> <pass>
+      LABEL=DEBOS-DATA   /var/lib/mender   ext4    defaults             0      2
+      LABEL=DEBOS-EFI    /boot/efi         vfat    umask=0077,noatime   0      2
+      FSTAB
+
+  - action: image-partition
+    description: Create the A/B GPT image
+    imagename: {{ $imagename }}
+    imagesize: {{ $imagesize }}
+    partitiontype: gpt
+    mountpoints:
+      - mountpoint: /
+        partition: rootfsa
+        buildtime: true          # mounted for deploy only; root comes from GRUB cmdline
+      - mountpoint: /boot/efi
+        partition: esp
+      - mountpoint: /var/lib/mender
+        partition: data
+    partitions:
+      - name: esp
+        fs: fat32
+        fslabel: DEBOS-EFI
+        start: 0%
+        end: 256M
+        flags: [ boot, esp ]
+      - name: rootfsa
+        fs: ext4
+        fslabel: DEBOS-ROOTA
+        start: 256M
+        end: 2560M
+      - name: rootfsb
+        fs: ext4
+        fslabel: DEBOS-ROOTB
+        start: 2560M
+        end: 4864M
+      - name: data
+        fs: ext4
+        fslabel: DEBOS-DATA
+        start: 4864M
+        end: 100%
+
+  - action: filesystem-deploy
+    description: Deploy the rootfs onto the image partitions
+    setup-fstab: false           # we ship our own label-based fstab (see above)
+    setup-kernel-cmdline: false  # GRUB (grub-mender-grubenv) owns the cmdline
+
+  - action: run
+    description: Extract the root partition as an ext4 image for the rootfs-image artifact
+    postprocess: true
+    command: |
+      set -eu
+      IMG="${ARTIFACTDIR}/{{ $imagename }}"
+      # p2 = rootfsA (exactly what Mender writes to the inactive slot). Read its
+      # sector offset+size from the partition table and dd straight from the image
+      # file -- no loop device / udev partition nodes needed (fragile post-machine).
+      read START SIZE <<EOF
+      $(sfdisk -d "$IMG" | awk -F'[=,]' '/ : start=/{n++; if(n==2){gsub(/ /,"",$2); gsub(/ /,"",$4); print $2, $4}}')
+      EOF
+      echo "rootfsA: start=${START} sectors, size=${SIZE} sectors"
+      dd if="$IMG" of="${ARTIFACTDIR}/rootfs.ext4" bs=512 skip="$START" count="$SIZE" conv=sparse
