@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  qemuarm64 Debian A/B Mender demo, built with ELBE (Embedded Linux Build
+  Environment). Sibling of the debos demo: same UEFI/GRUB + grub-mender-grubenv
+  A/B integration and mender-client4, built via ELBE instead of debos.
+
+  Disk (GPT, /dev/vda under qemu virtio-blk):
+    p1 ELBE-EFI  (vfat) -> /boot/efi        : BOOTAA64.EFI + mender grub.cfg + grubenv
+    p2 ELBE-ROOTA(ext4) -> /                : active root (populated at build time)
+    p3 ELBE-ROOTB(ext4) -> (none)           : inactive Mender slot (client writes it)
+    p4 ELBE-DATA (ext4) -> /var/lib/mender  : persistent Mender state (survives A/B)
+
+  Build:  elbe initvm create (qemu backend) with this XML, output to a dir (KVM
+          if available, else TCG). See mender-integration-builds
+          /.forgejo/workflows/build-elbe-demo.yml.
+-->
+<ns0:RootFileSystem xmlns:ns0="https://www.linutronix.de/projects/Elbe"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    revision="6"
+                    xsi:schemaLocation="https://www.linutronix.de/projects/Elbe dbsfed.xsd">
+  <project>
+    <name>qemuarm64-elbe-ab</name>
+    <version>1.0</version>
+    <description>Debian trixie arm64 A/B Mender demo (ELBE)</description>
+    <buildtype>aarch64</buildtype>
+    <mirror>
+      <primary_host>deb.debian.org</primary_host>
+      <primary_path>/debian</primary_path>
+      <primary_proto>http</primary_proto>
+    </mirror>
+    <suite>trixie</suite>
+  </project>
+  <target>
+    <hostname>elbe-mender</hostname>
+    <domain>example.com</domain>
+    <console>ttyAMA0,115200</console>
+    <images>
+      <gpthd>
+        <name>disk.img</name>
+        <size>5GiB</size>
+        <partition>
+          <size>256MiB</size>
+          <label>ELBE-EFI</label>
+          <bootable>true</bootable>
+        </partition>
+        <partition>
+          <size>2304MiB</size>
+          <label>ELBE-ROOTA</label>
+        </partition>
+        <partition>
+          <size>2304MiB</size>
+          <label>ELBE-ROOTB</label>
+        </partition>
+        <partition>
+          <size>remain</size>
+          <label>ELBE-DATA</label>
+        </partition>
+      </gpthd>
+    </images>
+    <fstab>
+      <bylabel>
+        <label>ELBE-ROOTA</label>
+        <mountpoint>/</mountpoint>
+        <fs><type>ext4</type></fs>
+      </bylabel>
+      <bylabel>
+        <label>ELBE-EFI</label>
+        <mountpoint>/boot/efi</mountpoint>
+        <fs><type>vfat</type></fs>
+      </bylabel>
+      <bylabel>
+        <label>ELBE-DATA</label>
+        <mountpoint>/var/lib/mender</mountpoint>
+        <fs><type>ext4</type></fs>
+      </bylabel>
+    </fstab>
+    <install-recommends />
+    <pkg-list>
+      <pkg>linux-image-arm64</pkg>
+      <pkg>initramfs-tools</pkg>
+      <pkg>grub-efi-arm64-bin</pkg>
+      <pkg>grub-common</pkg>
+      <pkg>make</pkg>
+      <pkg>systemd-sysv</pkg>
+      <pkg>systemd-resolved</pkg>
+      <pkg>udev</pkg>
+      <pkg>dbus</pkg>
+      <pkg>dbus-user-session</pkg>
+      <pkg>libpam-systemd</pkg>
+      <pkg>ca-certificates</pkg>
+      <pkg>curl</pkg>
+      <pkg>e2fsprogs</pkg>
+      <pkg>dosfstools</pkg>
+      <pkg>openssh-server</pkg>
+    </pkg-list>
+    <finetuning>
+      <raw_cmd>sh /opt/mender-integration/install-mender.sh</raw_cmd>
+      <raw_cmd>sh /opt/mender-integration/configure-system.sh</raw_cmd>
+      <raw_cmd>sh /opt/mender-integration/install-grub-mender-ab.sh</raw_cmd>
+      <rm>opt/mender-integration</rm>
+      <rm>var/cache/apt/archives/*.deb</rm>
+    </finetuning>
+    <project-finetuning>
+      <losetup img="disk.img">
+        <extract_partition part="2">rootfs.img</extract_partition>
+      </losetup>
+      <set_packer packer="none">rootfs.img</set_packer>
+      <set_packer packer="none">disk.img</set_packer>
+    </project-finetuning>
+  </target>
+</ns0:RootFileSystem>
