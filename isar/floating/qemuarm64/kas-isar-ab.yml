@@ -1,0 +1,38 @@
+# kas config: ISAR Debian trixie/arm64 A/B Mender demo for qemuarm64.
+#
+# Pins ilbers/isar and layers meta-mender-isar (this repo) on top. The build
+# produces the Debian rootfs (.ext4, the OTA payload) with mender-client4 and the
+# efibootmgr A/B integration; the bootable A/B .wic disk is added in the boot/OTA
+# bring-up phase.
+#
+# Build (in the build-isar-builder container, as the builder user):
+#   MENDER_TENANT_TOKEN=<token> kas build isar/floating/qemuarm64/kas-isar-ab.yml
+header:
+  version: 14
+
+build_system: isar-privileged
+
+machine: qemuarm64-mender
+distro: debian-trixie-mender
+target: mender-image
+
+# Passed through into the build so mender-config can bake the tenant token into
+# mender.conf. kas strips undeclared env vars, so it must be declared here.
+env:
+  MENDER_TENANT_TOKEN: ""
+
+repos:
+  # Upstream ISAR, pinned. debian-trixie/arm64 is supported since 86e154f77.
+  # Labelled isar-upstream (not "isar") to avoid colliding with this repo's
+  # top-level isar/ recipe tree when kas lays out sibling checkouts.
+  isar-upstream:
+    url: https://github.com/ilbers/isar.git
+    commit: b90b722fc2666b806a64f0bf5ca0feeb9b6f203b
+    layers:
+      meta:
+      meta-isar:
+
+  # This repository (mender-community-images); add our Mender/ISAR layer.
+  mender-community-images:
+    layers:
+      isar/floating/qemuarm64/meta-mender-isar:

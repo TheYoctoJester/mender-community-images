@@ -1,0 +1,32 @@
+#!/bin/sh
+# mender-config postinst. Runs after mender-setup/mender-client4 are configured
+# (mender-config depends on mender-client4), so it overwrites the client's
+# default /etc/mender/mender.conf here rather than shipping a competing conffile
+# (which would trigger a dpkg conffile prompt/conflict).
+set -e
+
+if [ "$1" = "configure" ]; then
+    mkdir -p /etc/mender /var/lib/mender
+
+    # Mender client config: no RootfsPartA/B -- the efibootmgr update module owns
+    # A/B slot selection.
+    cat > /etc/mender/mender.conf <<EOF
+{
+  "ServerURL": "${MENDER_SERVER_URL}",
+  "TenantToken": "${MENDER_TENANT_TOKEN}",
+  "UpdatePollIntervalSeconds": 5,
+  "InventoryPollIntervalSeconds": 5,
+  "RetryPollIntervalSeconds": 30
+}
+EOF
+    echo "artifact_name=${MENDER_ARTIFACT_NAME}" > /etc/mender/artifact_info
+    echo "device_type=${MENDER_DEVICE_TYPE}" > /var/lib/mender/device_type
+
+    # Demo login (matches the debos/elbe siblings).
+    echo 'root:mender' | chpasswd
+
+    # Networking via systemd-networkd/-resolved (enable is offline-safe in the
+    # build chroot; it just creates the wants symlinks).
+    systemctl enable systemd-networkd systemd-resolved >/dev/null 2>&1 || true
+    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf 2>/dev/null || true
+fi
