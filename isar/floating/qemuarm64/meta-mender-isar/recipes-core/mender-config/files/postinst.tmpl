@@ -22,6 +22,16 @@ EOF
     echo "artifact_name=${MENDER_ARTIFACT_NAME}" > /etc/mender/artifact_info
     echo "device_type=${MENDER_DEVICE_TYPE}" > /var/lib/mender/device_type
 
+    # Mount points + fstab for the ESP and the persistent data partition. ISAR's
+    # image_configure_fstab writes only a base fstab (proc/sys/...), so add ours.
+    # Root (/) is intentionally absent -- the kernel cmdline (UKI or per-slot UEFI
+    # entry) supplies root= for the active slot. Labels match the wks --label.
+    mkdir -p /boot/efi /data
+    cat >> /etc/fstab <<'FSTAB'
+LABEL=data   /data       ext4   defaults             0  2
+LABEL=ESP    /boot/efi   vfat   umask=0077,noatime   0  2
+FSTAB
+
     # Demo login (matches the debos/elbe siblings).
     echo 'root:mender' | chpasswd
 

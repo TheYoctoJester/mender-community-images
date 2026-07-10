@@ -1,0 +1,23 @@
+# A/B GPT disk for the ISAR efibootmgr Mender demo (qemuarm64).
+#
+#   1. ESP   (FAT)  -> /boot/efi : EFI/BOOT/bootaa64.efi (UKI, first-boot fallback
+#                                  -> rootA), EFI/mender-a/{linux.efi,initrd.img},
+#                                  EFI/mender-b/{linux.efi,initrd.img}
+#   2. rootA (ext4) -> /         : active rootfs, fixed PARTUUID
+#   3. rootB (ext4)              : inactive Mender slot (client writes it)
+#   4. data  (ext4) -> /data     : persistent Mender state (survives A/B)
+#
+# GPT part-names (--part-name) drive /dev/disk/by-partlabel/{ESP,rootA,rootB},
+# which the efibootmgr update module + first-boot service rely on. The ESP is
+# populated from the staged boot/esp tree (built in ROOTFS_POSTPROCESS_COMMAND).
+# There is no on-disk bootloader: UEFI launches the EFI-stub kernel directly.
+
+part /boot/efi --source rootfs --rootfs-dir=${MENDER_ESP_DIR} --fstype=vfat --label ESP --part-name ESP --part-type C12A7328-F81F-11D2-BA4B-00A0C93EC93B --align 1024 --size 350M --active
+part / --source rootfs --fstype=ext4 --label rootA --part-name rootA --align 1024 --fixed-size 1024M --uuid ${MENDER_ISAR_ROOTA_UUID}
+# rootB stays unformatted (--source empty): the efibootmgr update module dd's the
+# ext4 OTA payload onto it. The data partition must be a formatted, labelled ext4
+# so LABEL=data mounts at boot (a sourceless part with --fstype creates an empty fs).
+part --source empty --fstype=ext4 --label rootB --part-name rootB --align 1024 --fixed-size 1024M --uuid ${MENDER_ISAR_ROOTB_UUID}
+part /data --fstype=ext4 --label data --part-name data --align 1024 --size 128M
+
+bootloader --ptable gpt

@@ -49,6 +49,7 @@ The `.ext4` rootfs is the OTA payload (wrapped as a `module-image` artifact of t
 
 ## Status
 
-The image builds end-to-end (Debian trixie/arm64 rootfs with the Mender client and
-the efibootmgr A/B integration). The bootable A/B disk and the qemu OTA round-trip
-against hosted.mender.io are in progress.
+Verified end-to-end: the image builds (Debian trixie/arm64 with the Mender client
+and the efibootmgr A/B integration), boots on qemu via the UKI first-boot fallback
+onto rootA, enrols on hosted.mender.io, and completes a qemu OTA round-trip
+(deploy -> BootNext trial boot of the inactive slot -> commit), success=1.
