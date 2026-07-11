@@ -44,6 +44,15 @@ ln -sf /lib/systemd/system/var-lib-mender.mount \
 ln -sf /lib/systemd/system/var-lib-mender.mount \
     "$R/etc/systemd/system/mender-updated.service.wants/var-lib-mender.mount"
 
+# Enable the UART serial console (RPi OS leaves it off by default) so the lab
+# hardware harness can watch the boot, and drop pi-gen's first-boot resize (our
+# tryboot A/B layout is fixed -- no root-partition grow). config.txt/cmdline.txt
+# here seed both boot FATs in assemble-tryboot-image.sh (which sets root= per slot).
+CFG="$R/boot/firmware/config.txt"
+CMD="$R/boot/firmware/cmdline.txt"
+if [ -f "$CFG" ]; then grep -q '^enable_uart=1' "$CFG" || printf '\n# Serial console for the lab UART\nenable_uart=1\n' >> "$CFG"; fi
+if [ -f "$CMD" ]; then sed -i 's/[[:space:]]\+resize[[:space:]]*$//; s/ init=[^ ]*//g' "$CMD"; fi
+
 # Note: no boot-file staging needed -- the pi-gen rootfs /boot already holds the
 # kernel + DTBs, which is what the tryboot update module overlays onto the inactive
 # boot FAT (the firmware base -- config.txt, start*.elf, kernel_*.img -- comes from
