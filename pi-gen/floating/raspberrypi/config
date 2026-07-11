@@ -1,0 +1,21 @@
+# pi-gen config for the Raspberry Pi (Pi4/Pi5) A/B Mender demo.
+# Built from the pi-gen arm64 branch (Debian trixie, arm64). Lite only + a custom
+# stage-mender that installs the Mender client and the tryboot A/B integration.
+IMG_NAME='raspios-mender-pigen'
+RELEASE='trixie'
+DEPLOY_COMPRESSION='none'
+DEPLOY_ZIP='0'
+
+# Lite base (stage0-2) + our Mender stage; desktop stages 3-5 are not listed so
+# they are not built.
+STAGE_LIST='stage0 stage-qemu-workaround stage1 stage2 stage-mender'
+
+TARGET_HOSTNAME='raspberrypi-pigen'
+FIRST_USER_NAME='mender'
+FIRST_USER_PASS='mender'
+DISABLE_FIRST_BOOT_USER_RENAME='1'
+ENABLE_SSH='1'
+LOCALE_DEFAULT='en_US.UTF-8'
+KEYBOARD_KEYMAP='us'
+KEYBOARD_LAYOUT='English (US)'
+TIMEZONE_DEFAULT='Etc/UTC'
