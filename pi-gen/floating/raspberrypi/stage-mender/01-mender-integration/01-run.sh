@@ -50,7 +50,13 @@ ln -sf /lib/systemd/system/var-lib-mender.mount \
 # here seed both boot FATs in assemble-tryboot-image.sh (which sets root= per slot).
 CFG="$R/boot/firmware/config.txt"
 CMD="$R/boot/firmware/cmdline.txt"
-if [ -f "$CFG" ]; then grep -q '^enable_uart=1' "$CFG" || printf '\n# Serial console for the lab UART\nenable_uart=1\n' >> "$CFG"; fi
+if [ -f "$CFG" ]; then
+    # enable_uart=1 + disable-bt: route serial0 to the stable PL011 (ttyAMA0) at
+    # 115200 instead of the mini-UART (whose baud drifts and garbles the console
+    # the lab harness watches).
+    grep -q '^enable_uart=1'          "$CFG" || printf '\n# Serial console for the lab UART\nenable_uart=1\n' >> "$CFG"
+    grep -q '^dtoverlay=disable-bt'   "$CFG" || echo 'dtoverlay=disable-bt' >> "$CFG"
+fi
 if [ -f "$CMD" ]; then sed -i 's/[[:space:]]\+resize[[:space:]]*$//; s/ init=[^ ]*//g' "$CMD"; fi
 
 # Note: no boot-file staging needed -- the pi-gen rootfs /boot already holds the
