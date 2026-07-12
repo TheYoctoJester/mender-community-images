@@ -32,6 +32,15 @@ EOF
 echo "artifact_name=${MENDER_ARTIFACT_NAME}" > "$R/etc/mender/artifact_info"
 echo "device_type=${MENDER_DEVICE_TYPE}"     > "$R/var/lib/mender/device_type"
 
+# Replace pi-gen's fstab: it ships literal BOOTDEV/ROOTDEV placeholders (normally
+# substituted by pi-gen's export-image, which we skip) -> systemd fails those mounts
+# and drops to emergency mode. For the tryboot A/B layout: / comes from the kernel
+# cmdline (root=), the active boot FAT is mounted on demand by the update module, and
+# /data is handled by data.mount. So a minimal fstab suffices.
+cat > "$R/etc/fstab" <<'FSTAB'
+proc  /proc  proc  defaults  0  0
+FSTAB
+
 # Enable the persistence units (mender-client4's own services are enabled by its
 # Debian postinst). data.mount -> local-fs.target; var-lib-mender.mount -> mender.
 install -d "$R/etc/systemd/system/local-fs.target.wants"
