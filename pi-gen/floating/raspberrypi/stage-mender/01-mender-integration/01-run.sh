@@ -36,10 +36,18 @@ echo "device_type=${MENDER_DEVICE_TYPE}"     > "$R/var/lib/mender/device_type"
 # substituted by pi-gen's export-image, which we skip) -> systemd fails those mounts
 # and drops to emergency mode. For the tryboot A/B layout: / comes from the kernel
 # cmdline (root=), the active boot FAT is mounted on demand by the update module, and
-# /data is handled by data.mount. So a minimal fstab suffices.
+# /data is handled by data.mount. So a minimal fstab suffices -- but root must be
+# mounted read-write: with no "/" entry here, systemd-remount-fs never remounts it,
+# and the kernel mounts root read-only by default, which breaks data.mount (cannot
+# create /data), the var-lib-mender bind, and mender writing its identity key. So we
+# add "rw" to the kernel cmdline below (slot-agnostic; the fstab root device would
+# differ per A/B slot).
 cat > "$R/etc/fstab" <<'FSTAB'
 proc  /proc  proc  defaults  0  0
 FSTAB
+
+# data.mount's target must exist in the rootfs (a read-only root cannot create it).
+install -d "$R/data"
 
 # Forward the journal to the serial UART (ttyAMA0) so the lab harness captures
 # mender + NetworkManager + time-sync logs. ForwardToConsole alone targets
@@ -118,7 +126,13 @@ if [ -f "$CFG" ]; then
     grep -q '^enable_uart=1'          "$CFG" || printf '\n# Serial console for the lab UART\nenable_uart=1\n' >> "$CFG"
     grep -q '^dtoverlay=disable-bt'   "$CFG" || echo 'dtoverlay=disable-bt' >> "$CFG"
 fi
-if [ -f "$CMD" ]; then sed -i 's/[[:space:]]\+resize[[:space:]]*$//; s/ init=[^ ]*//g' "$CMD"; fi
+if [ -f "$CMD" ]; then
+    sed -i 's/[[:space:]]\+resize[[:space:]]*$//; s/ init=[^ ]*//g' "$CMD"
+    # Mount root read-write (RPi OS relies on an fstab "/" entry for this, which the
+    # A/B layout omits -- see the fstab note above). assemble-tryboot-image.sh only
+    # rewrites root=, so "rw" here propagates to both slots' cmdline.
+    grep -qw rw "$CMD" || sed -i 's/[[:space:]]*$/ rw/' "$CMD"
+fi
 
 # Note: no boot-file staging needed -- the pi-gen rootfs /boot already holds the
 # kernel + DTBs, which is what the tryboot update module overlays onto the inactive
