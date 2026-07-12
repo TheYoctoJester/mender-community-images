@@ -41,14 +41,57 @@ cat > "$R/etc/fstab" <<'FSTAB'
 proc  /proc  proc  defaults  0  0
 FSTAB
 
-# Forward the journal to the serial console so the lab harness captures mender +
-# NetworkManager + time-sync logs (mender-authd logs to the journal, not the
-# console) -- useful for a headless DUT demo and for bring-up diagnosis.
+# Forward the journal to the serial UART (ttyAMA0) so the lab harness captures
+# mender + NetworkManager + time-sync logs. ForwardToConsole alone targets
+# /dev/console, which on RPi OS is tty1 (HDMI) -- the last console= in cmdline --
+# so pin TTYPath to the serial device the harness actually watches.
 install -d "$R/etc/systemd/journald.conf.d"
 cat > "$R/etc/systemd/journald.conf.d/90-forward-console.conf" <<'JCONF'
 [Journal]
 ForwardToConsole=yes
+TTYPath=/dev/ttyAMA0
+MaxLevelConsole=info
 JCONF
+
+# RTC-less clock floor: a Raspberry Pi has no battery-backed clock, so it boots at
+# systemd's compiled-in epoch (the Debian systemd build date -- months stale). If
+# that predates the Mender server's TLS certificate notBefore, every handshake fails
+# "certificate is not yet valid" and the client never enrols. NTP (timesyncd) fixes
+# it eventually, but not reliably before enrolment. So advance the clock (never
+# backwards) to the image build time at boot, before mender-authd -- the image is
+# always built recently, hence past any live server cert's notBefore.
+BUILD_EPOCH="$(date -u +%s)"
+install -d "$R/usr/local/sbin"
+cat > "$R/usr/local/sbin/mender-clock-floor" <<CFLOOR
+#!/bin/sh
+# Advance the system clock to the image build time if it is currently older.
+floor=${BUILD_EPOCH}
+now=\$(date -u +%s)
+if [ "\$now" -lt "\$floor" ]; then
+    date -u -s "@\$floor" >/dev/null
+    echo "mender-clock-floor: advanced clock to build time (\$floor)"
+fi
+CFLOOR
+chmod 0755 "$R/usr/local/sbin/mender-clock-floor"
+cat > "$R/lib/systemd/system/mender-clock-floor.service" <<'CFSVC'
+[Unit]
+Description=Advance the clock to a build-time floor (RTC-less board; Mender TLS needs a sane clock)
+DefaultDependencies=no
+Conflicts=shutdown.target
+After=systemd-remount-fs.service
+Before=sysinit.target time-sync.target mender-authd.service mender-updated.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/mender-clock-floor
+
+[Install]
+WantedBy=sysinit.target
+CFSVC
+install -d "$R/etc/systemd/system/sysinit.target.wants"
+ln -sf /lib/systemd/system/mender-clock-floor.service \
+    "$R/etc/systemd/system/sysinit.target.wants/mender-clock-floor.service"
 
 # Enable the persistence units (mender-client4's own services are enabled by its
 # Debian postinst). data.mount -> local-fs.target; var-lib-mender.mount -> mender.
