@@ -41,6 +41,15 @@ cat > "$R/etc/fstab" <<'FSTAB'
 proc  /proc  proc  defaults  0  0
 FSTAB
 
+# Forward the journal to the serial console so the lab harness captures mender +
+# NetworkManager + time-sync logs (mender-authd logs to the journal, not the
+# console) -- useful for a headless DUT demo and for bring-up diagnosis.
+install -d "$R/etc/systemd/journald.conf.d"
+cat > "$R/etc/systemd/journald.conf.d/90-forward-console.conf" <<'JCONF'
+[Journal]
+ForwardToConsole=yes
+JCONF
+
 # Enable the persistence units (mender-client4's own services are enabled by its
 # Debian postinst). data.mount -> local-fs.target; var-lib-mender.mount -> mender.
 install -d "$R/etc/systemd/system/local-fs.target.wants"
