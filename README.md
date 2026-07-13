@@ -134,7 +134,7 @@ Maintained on demand only as of 2026-06-15 — kas configs preserved, no schedul
 
 ### Wrynose (floating only)
 
-One of the two maintained LTS tiers alongside scarthgap. Same board set as kirkstone — `qemu{arm64,x86-64}`, RPi {3-64,4-64,5,ARMv8}, BeagleBone {Black, U-Boot} — plus BeaglePlay (TI AM625). Floating-only: a `tagged/` tier will be added once upstream cuts wrynose branches for `meta-mender` and `meta-raspberrypi` (neither has one yet).
+One of the two maintained LTS tiers alongside scarthgap. Same board set as kirkstone — `qemu{arm64,x86-64}`, RPi {3-64,4-64,5,ARMv8}, BeagleBone {Black, U-Boot} — plus BeaglePlay (TI AM625) and the Arduino Uno Q (Qualcomm QRB2210, `uno-q.yml`; STM32U585 MCU firmware via the `mcu` multiconfig in `uno-q-mcu-firmware.yml`). Floating-only: a `tagged/` tier will be added once upstream cuts wrynose branches for `meta-mender` and `meta-raspberrypi` (neither has one yet).
 
 ## Layer pinning
 
