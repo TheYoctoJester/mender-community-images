@@ -23,11 +23,9 @@ repos:
     layers:
       meta-mender-core:
 
-  # TODO: repoint to mendersoftware/meta-mender-community:wrynose once the
-  # meta-mender-qcom layer PR (mendersoftware/meta-mender-community#517) merges.
   meta-mender-community:
-    url: https://github.com/theyoctojester/meta-mender-community.git
-    branch: mender-qcom-uno-q
+    url: https://github.com/mendersoftware/meta-mender-community.git
+    branch: wrynose
     layers:
       meta-mender-qcom:
 
