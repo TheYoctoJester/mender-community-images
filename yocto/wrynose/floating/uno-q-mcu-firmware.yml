@@ -36,6 +36,14 @@ local_conf_header:
   unoq-mcu-multiconfig: |
     # conf/multiconfig/mcu.conf ships in meta-mender-qcom (MACHINE = arduino-uno-q).
     BBMULTICONFIG = "mcu"
+    # The mcu multiconfig must not share TMPDIR with the default (uno-q Linux)
+    # config: its native task hashes differ (newlib/Cortex-M toolchain), so both
+    # configs build the same native recipes in the same tmp/work/x86_64-linux
+    # workdir and collide when one variant is sstate-restored while the other
+    # executes for real ("Cannot find specified native file: ... meson.native").
+    # mcu.conf requires local.conf, so this evaluates once per multiconfig:
+    # BB_CURRENT_MC is "" in the default config (plain tmp) and "mcu" there.
+    TMPDIR = "${TOPDIR}/${@'tmp-' + d.getVar('BB_CURRENT_MC') if d.getVar('BB_CURRENT_MC') else 'tmp'}"
 
 target:
   - core-image-base
