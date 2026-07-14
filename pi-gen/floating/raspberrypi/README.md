@@ -10,16 +10,19 @@ by a full Mender OTA, not qemu.
 ## A/B mechanism — tryboot (reused)
 
 Unlike the debos/elbe/isar demos, there is no bootloader in the rootfs and no GRUB.
-A/B is done with the Raspberry Pi firmware's native **tryboot** mechanism, reusing
-`meta-mender-raspberrypi-tryboot` from meta-mender-community:
+A/B is done with the Raspberry Pi firmware's native **tryboot** mechanism, adapted
+from `meta-mender-raspberrypi-tryboot` in meta-mender-community (this copy streams
+the payload and sources the boot FAT from the Raspberry Pi OS `/boot/firmware`):
 
 - `autoboot.txt` on the tryboot partition selects the active boot partition
   (`tryboot_a_b=1`); a one-shot `reboot '0 tryboot'` boots the *other* slot for one
   boot only, giving power-loss/boot-failure rollback for free.
-- The reused `rpi-tryboot-rootfs` Mender **update module** (POSIX shell) writes the
-  inactive rootfs, repopulates that slot's boot FAT (firmware base + new kernel/DTBs
-  from the artifact rootfs `/boot`), rewrites `cmdline.txt root=` + `autoboot.txt`,
-  reboots via tryboot, and commits on success.
+- The `rpi-tryboot-rootfs` Mender **update module** (POSIX shell) streams the
+  payload straight onto the inactive rootfs partition in the Download state (no
+  buffering on the small data partition), repopulates that slot's boot FAT from
+  the new rootfs's `/boot/firmware` (the complete RPi boot set), rewrites
+  `cmdline.txt root=` + `autoboot.txt`, reboots via tryboot, and commits on
+  success.
 
 ## Layout (MBR, `/dev/mmcblk0`)
 
@@ -55,4 +58,8 @@ of type `rpi-tryboot-rootfs`) is the OTA payload.
 
 ## Status
 
-In development (build + hardware OTA bring-up on dut1/dut2).
+Verified end-to-end on physical hardware: full Mender OTA (artifact upload,
+streamed install to the inactive slot, tryboot reboot, verify, commit) passed on
+both the Raspberry Pi 4 (dut1) and the Raspberry Pi 5 (dut2) lab DUTs —
+mender-integration-builds CI run #2551 (2026-07-14), deployment
+`status=finished` / `success=1` on each board.

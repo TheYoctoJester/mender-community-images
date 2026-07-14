@@ -49,18 +49,6 @@ FSTAB
 # data.mount's target must exist in the rootfs (a read-only root cannot create it).
 install -d "$R/data"
 
-# Forward the journal to the serial UART (ttyAMA0) so the lab harness captures
-# mender + NetworkManager + time-sync logs. ForwardToConsole alone targets
-# /dev/console, which on RPi OS is tty1 (HDMI) -- the last console= in cmdline --
-# so pin TTYPath to the serial device the harness actually watches.
-install -d "$R/etc/systemd/journald.conf.d"
-cat > "$R/etc/systemd/journald.conf.d/90-forward-console.conf" <<'JCONF'
-[Journal]
-ForwardToConsole=yes
-TTYPath=/dev/ttyAMA0
-MaxLevelConsole=info
-JCONF
-
 # RTC-less clock floor: a Raspberry Pi has no battery-backed clock, so it boots at
 # systemd's compiled-in epoch (the Debian systemd build date -- months stale). If
 # that predates the Mender server's TLS certificate notBefore, every handshake fails
