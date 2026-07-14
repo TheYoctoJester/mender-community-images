@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/siemens/kas/master/kas/schema-kas.json
+#
+# Arduino Uno Q with Mender OTA and baked WiFi credentials (demo/lab use).
+#
+# Extends uno-q.yml with the meta-mender-wifi demo layer, which generates a
+# wpa_supplicant config for wlan0 from DEMO_WIFI_SSID/DEMO_WIFI_PASSKEY at
+# build time. The values below are placeholders — override them in a local,
+# uncommitted kas overlay. Credentials baked this way persist across A/B
+# deployments (they travel with every artifact built from this config);
+# see the layer README for the redistribution caveat.
+
+header:
+  version: 14
+  includes:
+    - uno-q.yml
+
+repos:
+  mender-community-images:
+    layers:
+      yocto/wrynose/demos/meta-mender-wifi:
+
+local_conf_header:
+  demo-wifi: |
+    IMAGE_INSTALL:append = " demo-wifi"
+    DEMO_WIFI_SSID = "Demo_SSID"
+    DEMO_WIFI_PASSKEY = "Demo_Password"
