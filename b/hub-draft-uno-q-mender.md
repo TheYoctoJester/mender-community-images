@@ -59,6 +59,8 @@ local_conf_header:
 
 You find the tenant token on Hosted Mender under *Organization and billing*. The `DEMO_WIFI_*` variables are consumed by the `meta-mender-wifi` demo layer, which the wifi variant of the board configuration pulls in — more on that in the next step.
 
+Keep the section name `my-site` (or anything else that sorts late alphabetically): kas writes `local_conf_header` sections into the generated `local.conf` in alphabetical order, not in the order the configuration files are listed, so an override in a section that sorts before the board configuration's own sections silently loses.
+
 ## Step 2: Build
 
 ```
@@ -152,11 +154,13 @@ Since the image includes `mender-connect`, the *Remote Terminal* works too, whic
 ```
 # qbootctl -c
 Current slot: _a
-# cat /proc/cmdline | grep -o "root=[^ ]*"
-root=PARTLABEL=system_a
+# mount | grep " / "
+/dev/mmcblk0p75 on / type ext4 (rw,relatime)
+# ls -l /dev/disk/by-partlabel/system_a
+lrwxrwxrwx 1 root root 16 Jan  1  1970 /dev/disk/by-partlabel/system_a -> ../../mmcblk0p75
 ```
 
-A fresh flash always boots slot A.
+A fresh flash always boots slot A. One thing *not* to use as a slot check: `root=` in `/proc/cmdline`. It always shows `PARTLABEL=system_a` — that is the baked fallback, and the slot-aware initramfs overrides the actual root mount, not the kernel command line. `qbootctl -c` or the mounted device are the truth.
 
 ## Step 6: Deploy an A/B update
 
@@ -181,7 +185,7 @@ build/tmp/deploy/images/uno-q/core-image-base-uno-q.mender
 
 If you ever need to craft one by hand — say, for a rootfs that came out of a different build — the equivalent is `mender-artifact write module-image -T qbootctl-rootfs -n <name> -t uno-q -f <rootfs>.ext4` with the tool from [downloads.mender.io](https://docs.mender.io/downloads) or from `bitbake mender-artifact-native`.
 
-Upload the `.mender` file on Hosted Mender under *Releases* and create a deployment targeting the device. The update module then does the slot dance: it streams the payload to the inactive slot (`system_b`), marks it active via `qbootctl`, and reboots. The slot-aware initramfs mounts the new slot, Mender verifies it is indeed running from the expected slot, and commits the update — only then is the new slot blessed as bootable. The deployment reports *Success*, and the device now shows `artifact_name: uno-q-v2` running from `PARTLABEL=system_b`.
+Upload the `.mender` file on Hosted Mender under *Releases* and create a deployment targeting the device. The update module then does the slot dance: it streams the payload to the inactive slot (`system_b`), marks it active via `qbootctl`, and reboots. The slot-aware initramfs mounts the new slot, Mender verifies it is indeed running from the expected slot, and commits the update — only then is the new slot blessed as bootable. The deployment reports *Success*, and the device now shows `artifact_name: uno-q-v2` running from `system_b` (verify with `qbootctl -c` or the mounted root device, as in step 5 — not `/proc/cmdline`).
 
 If anything goes wrong — the payload does not boot, or verification fails — the mechanism rolls back: the initramfs detects the unbootable slot, switches back to the previous one, and the deployment ends in *Failure* with the device untouched on its known-good slot. It is worth provoking this once with a deliberately broken artifact just to watch it happen; confidence in the rollback path is the reason to use A/B updates in the first place.
 
