@@ -58,22 +58,40 @@ get_inactive_parts() {
 
 case "$STATE" in
 
+    Download)
+        # Stream the payload straight onto the inactive rootfs partition.
+        # Consuming the streams here means mender does NOT buffer the
+        # rootfs-sized payload under /var/lib/mender first -- the data
+        # partition is far smaller than the rootfs image, so buffering
+        # fails with "No space left on device" (run 2547).
+        # Protocol: read one line from stream-next (relative path to the
+        # next stream, e.g. "streams/<name>"), read that named pipe exactly
+        # once, repeat until stream-next yields a zero-length read.
+        active_boot=$(get_active_boot_part)
+        get_inactive_parts "$active_boot"
+        echo "Streaming payload to $INACTIVE_ROOT_DEV"
+        while true; do
+            stream=$(cat "$FILES/stream-next")
+            [ -n "$stream" ] || break
+            dd if="$FILES/$stream" of="$INACTIVE_ROOT_DEV" bs=4M conv=fsync status=none
+        done
+        sync
+        ;;
+
     ArtifactInstall)
         active_boot=$(get_active_boot_part)
         get_inactive_parts "$active_boot"
 
-        # Find the rootfs image in the artifact payload
-        rootfs_image=$(ls "$FILES"/files/*.ext4 2>/dev/null | head -1)
-        if [ -z "$rootfs_image" ]; then
-            echo "ERROR: no ext4 rootfs image found in artifact payload" >&2
-            exit 1
-        fi
-
         echo "Active boot partition: $active_boot"
-        echo "Writing rootfs to $INACTIVE_ROOT_DEV"
 
-        # Write rootfs image to inactive rootfs partition
-        dd if="$rootfs_image" of="$INACTIVE_ROOT_DEV" bs=4M conv=fsync status=progress
+        # Download normally streams the rootfs image straight onto the
+        # inactive partition (files/ is then empty); fall back to a payload
+        # buffered under files/ if the client staged it instead.
+        rootfs_image=$(ls "$FILES"/files/*.ext4 2>/dev/null | head -1)
+        if [ -n "$rootfs_image" ]; then
+            echo "Writing buffered rootfs to $INACTIVE_ROOT_DEV"
+            dd if="$rootfs_image" of="$INACTIVE_ROOT_DEV" bs=4M conv=fsync status=progress
+        fi
 
         # Mount the newly written rootfs to extract boot files
         rootfs_mount=$(mktemp -d /tmp/mender-rootfs.XXXXXX)
