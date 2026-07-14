@@ -134,8 +134,7 @@ if [ -f "$CMD" ]; then
     grep -qw rw "$CMD" || sed -i 's/[[:space:]]*$/ rw/' "$CMD"
 fi
 
-# Note: no boot-file staging needed -- the pi-gen rootfs /boot already holds the
-# kernel + DTBs, which is what the tryboot update module overlays onto the inactive
-# boot FAT (the firmware base -- config.txt, start*.elf, kernel_*.img -- comes from
-# the active boot FAT the module copies first). The RPi boot FAT itself (config.txt,
-# cmdline.txt, kernel_*.img) is populated from the pi-gen image in assemble-tryboot-image.sh.
+# Note: no boot-file staging needed -- the rootfs /boot/firmware edited above is
+# the complete RPi boot set. It seeds both boot FATs at image build time (in
+# assemble-tryboot-image.sh) AND is what the tryboot update module copies onto the
+# inactive boot FAT during an OTA (both rewrite only root= in cmdline.txt).

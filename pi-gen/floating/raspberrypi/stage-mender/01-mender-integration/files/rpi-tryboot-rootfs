@@ -97,17 +97,6 @@ case "$STATE" in
         rootfs_mount=$(mktemp -d /tmp/mender-rootfs.XXXXXX)
         mount -o ro "$INACTIVE_ROOT_DEV" "$rootfs_mount"
 
-        # Find active boot partition mount (may already be mounted by fstab)
-        active_boot_dev="/dev/mmcblk0p${active_boot}"
-        active_boot_mount=$(findmnt -n -o TARGET -f "$active_boot_dev" 2>/dev/null | head -1 || true)
-        active_boot_mounted_here=false
-        if [ -z "$active_boot_mount" ]; then
-            active_boot_mount=$(mktemp -d /tmp/mender-active-boot.XXXXXX)
-            mount -o ro "$active_boot_dev" "$active_boot_mount"
-            active_boot_mounted_here=true
-        fi
-        echo "Active boot partition at $active_boot_mount"
-
         # Find or mount inactive boot partition (target)
         boot_mount=$(findmnt -n -o TARGET -f "$INACTIVE_BOOT_DEV" 2>/dev/null | head -1 || true)
         boot_mounted_here=false
@@ -121,25 +110,20 @@ case "$STATE" in
         fi
         echo "Inactive boot partition at $boot_mount"
 
-        # Populate inactive boot partition:
-        # 1. Start with a copy of the active boot partition (firmware files,
-        #    config.txt, overlays, etc. that are not in the rootfs /boot)
-        # 2. Then overlay with kernel + DTBs from the new rootfs /boot
-        echo "Copying boot files to $INACTIVE_BOOT_DEV"
+        # Populate the inactive boot partition from the new rootfs's
+        # /boot/firmware -- the complete RPi boot set (firmware, kernels,
+        # initrds, DTBs, overlays, config.txt), exactly what
+        # assemble-tryboot-image.sh puts on the boot FATs at image build
+        # time. Copying the active FAT as a base and overlaying all of the
+        # rootfs /boot on top instead overflows the 128 MB FAT: RPi OS
+        # keeps kernels + initrds in both places (run 2550).
+        if [ ! -e "$rootfs_mount/boot/firmware/config.txt" ]; then
+            echo "ERROR: new rootfs has no populated /boot/firmware" >&2
+            exit 1
+        fi
+        echo "Populating $INACTIVE_BOOT_DEV from the new rootfs /boot/firmware"
         rm -rf "$boot_mount"/*
-        cp -aL --no-preserve=links "$active_boot_mount"/* "$boot_mount"/
-        echo "Copied firmware base from active boot partition $active_boot_dev"
-
-        # Overlay with new kernel, DTBs, and overlays from the rootfs
-        if [ -d "$rootfs_mount/boot" ]; then
-            cp -aL --no-preserve=links "$rootfs_mount/boot"/* "$boot_mount"/
-            echo "Overlaid kernel and DTBs from new rootfs"
-        fi
-
-        if [ "$active_boot_mounted_here" = true ]; then
-            umount "$active_boot_mount"
-            rmdir "$active_boot_mount"
-        fi
+        cp -aL --no-preserve=links "$rootfs_mount/boot/firmware"/* "$boot_mount"/
 
         # Set cmdline.txt root= to the inactive rootfs partition
         echo "Setting cmdline.txt root=$INACTIVE_ROOT_DEV"
