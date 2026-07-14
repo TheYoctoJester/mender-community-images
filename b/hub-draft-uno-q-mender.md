@@ -2,7 +2,7 @@
 
 The Arduino Uno Q pairs a Qualcomm Dragonwing QRB2210 running Linux with an STM32U585 microcontroller on a single board. That makes it an interesting target for robust OTA updates: the Qualcomm boot chain already ships a native A/B slot mechanism (ABL plus `qbootctl`), so instead of retrofitting Mender's classic dual-rootfs layout with U-Boot or GRUB integration, the Mender integration for this board reuses the platform's own slots and drives them from a custom Update Module. The integration lives upstream in `meta-mender-community` (layer `meta-mender-qcom`, branch `wrynose`).
 
-This tutorial walks through the full cycle on real hardware: building the image with kas, injecting WiFi credentials into the finished image, flashing the board over Qualcomm EDL with `qdl`, verifying the device against Hosted Mender, and finally deploying an A/B rootfs update.
+This tutorial walks through the full cycle on real hardware: building the image with kas, WiFi credentials included, flashing the board over Qualcomm EDL with `qdl`, verifying the device against Hosted Mender, and finally deploying an A/B rootfs update.
 
 ## Step 0: Prerequisites
 
@@ -34,7 +34,7 @@ blacklist qcserial
 blacklist qmi_wwan
 ```
 
-## Step 1: Get the build configuration and add your Mender server
+## Step 1: Get the build configuration and add your site settings
 
 The kas configuration for the board lives in the [mender-community-images](https://github.com/theyoctojester/mender-community-images) repository:
 
@@ -43,7 +43,7 @@ git clone https://github.com/theyoctojester/mender-community-images
 cd mender-community-images
 ```
 
-The configuration deliberately does not contain a server URL or tenant token — those are site-specific. Create a small overlay file `my-site.yml` in the repository root:
+The committed configuration deliberately contains neither a server URL, nor a tenant token, nor network credentials — all of that is site-specific. Create a small overlay file `my-site.yml` in the repository root that carries yours:
 
 ```
 header:
@@ -53,17 +53,21 @@ local_conf_header:
   my-site: |
     MENDER_SERVER_URL = "https://hosted.mender.io"
     MENDER_TENANT_TOKEN = "<your tenant token>"
+    DEMO_WIFI_SSID = "<your ssid>"
+    DEMO_WIFI_PASSKEY = "<your passphrase>"
 ```
 
-You find the tenant token on Hosted Mender under *Organization and billing*.
+You find the tenant token on Hosted Mender under *Organization and billing*. The `DEMO_WIFI_*` variables are consumed by the `meta-mender-wifi` demo layer, which the wifi variant of the board configuration pulls in — more on that in the next step.
 
 ## Step 2: Build
 
 ```
-kas build yocto/wrynose/floating/uno-q.yml:my-site.yml
+kas build yocto/wrynose/floating/uno-q-wifi.yml:my-site.yml
 ```
 
 This composes the Qualcomm BSP (`meta-qcom` and `meta-qcom-3rdparty`, which provide the `uno-q` machine, kernel and boot firmware), `meta-mender-core` on the `wrynose` branch, and the `meta-mender-qcom` integration layer, then builds `core-image-base`. Expect a first build to take an hour or more; incremental builds are much faster.
+
+The `-wifi` variant extends the plain `uno-q.yml` with the `meta-mender-wifi` demo layer. Its single `demo-wifi` package generates `/etc/wpa_supplicant/wpa_supplicant-wlan0.conf` from the `DEMO_WIFI_*` variables at build time, adds a systemd-networkd DHCP configuration for `wlan*`, and enables the `wpa_supplicant@wlan0` service — the board comes up on your network on first boot, and stays connected across A/B deployments because every artifact built from this configuration carries the credentials. That is also the caveat: the passphrase is stored in plaintext in the image and in every artifact, so treat both as lab-internal and do not redistribute them. If that is not acceptable for your setup, build with the plain `uno-q.yml` and see step 3 for the alternative.
 
 Besides the rootfs, the interesting output is the `qcomflash` directory:
 
@@ -73,11 +77,11 @@ build/tmp/deploy/images/uno-q/core-image-base-uno-q.qcomflash/
 
 It contains the complete eMMC provisioning set: the Firehose programmer (`prog_firehose_ddr.elf`), the partition table description (`rawprogram0.xml`, `patch0.xml`), the boot chain, and the rootfs. The GPT it describes is the A/B variant provided by the integration layer: `system_a` and `system_b` for the OS, `dtbo_a`/`dtbo_b` (required by `qbootctl`), and a `userdata` partition that ends up mounted at `/data` for persistent Mender state. Both system slots are provisioned from the same `rootfs.img`, and `patch0.xml` grows `userdata` to the real eMMC size at flash time.
 
-## Step 3: Inject WiFi credentials
+## Step 3: Alternative — keep the credentials out of the build
 
-The Uno Q has no Ethernet, and baking WLAN credentials into a build configuration is a bad habit — they end up in artifacts, build history, and CI logs. Instead we inject them into the finished image, right before flashing. Since both slots are provisioned from the same `rootfs.img`, a single injection gives both slots connectivity.
+Baking WLAN credentials is convenient, but there are setups where they must not appear in a build configuration at all: they end up in artifacts, build history, and CI logs. In that case, build with the plain `uno-q.yml` (no `DEMO_WIFI_*` in `my-site.yml` needed) and inject the credentials into the finished image, right before flashing. Since both slots are provisioned from the same `rootfs.img`, a single injection gives both slots connectivity. If you built the wifi variant in step 2, skip ahead to step 4.
 
-The image already contains `wpa_supplicant` and `systemd-networkd`; all that is missing is a network block, a DHCP configuration, and enabling the service. Loop-mount the rootfs from the `qcomflash` directory:
+The image already contains `wpa_supplicant` and `systemd-networkd`; all that is missing is a network block, a DHCP configuration, and enabling the service — the same three pieces the demo layer installs at build time. Loop-mount the rootfs from the `qcomflash` directory:
 
 ```
 cd build/tmp/deploy/images/uno-q/core-image-base-uno-q.qcomflash
@@ -115,7 +119,7 @@ sudo umount mnt
 
 A note if the mount fails: the image is created with a current e2fsprogs and uses the `orphan_file` ext4 feature. Older host kernels or e2fsprogs releases do not know it. In that case, `debugfs -w` from e2fsprogs 1.47 or newer can perform the same three modifications (`mkdir`, `write`, `symlink`) without mounting at all — the build itself ships a suitable binary under `build/tmp/sysroots-components/x86_64/e2fsprogs-native/sbin/`.
 
-One property of this injection approach to be aware of: the credentials live only in the flashed image. The first A/B deployment replaces the rootfs with one built from the artifact, and the injected files are gone. For a lab or demo setup where the device should stay connected across deployments, bake the credentials at build time instead — the configuration repository carries a small demo layer for exactly that (`yocto/wrynose/demos/meta-mender-wifi`): build with `yocto/wrynose/floating/uno-q-wifi.yml` and set `DEMO_WIFI_SSID`/`DEMO_WIFI_PASSKEY` in a local overlay. Baked credentials travel with every artifact built from that configuration — which also means those images and artifacts must not leave your lab.
+One property of this injection approach to be aware of: the credentials live only in the flashed image. The first A/B deployment replaces the rootfs with one built from the artifact, and the injected files are gone — after that, the device needs another provisioning mechanism, or artifacts that carry their own connectivity setup. That trade-off is exactly why the baked approach from step 2 is the default for this tutorial's lab scenario.
 
 ## Step 4: Flash over EDL with qdl
 
@@ -165,8 +169,8 @@ Now for the actual point of the exercise. Make a change worth deploying — add 
 Rebuild, and also build the `mender-artifact` tool from the same tree:
 
 ```
-kas build yocto/wrynose/floating/uno-q.yml:my-site.yml
-kas shell yocto/wrynose/floating/uno-q.yml:my-site.yml -c "bitbake mender-artifact-native"
+kas build yocto/wrynose/floating/uno-q-wifi.yml:my-site.yml
+kas shell yocto/wrynose/floating/uno-q-wifi.yml:my-site.yml -c "bitbake mender-artifact-native"
 ```
 
 The tool ends up in `build/tmp/sysroots-components/x86_64/mender-artifact-native/usr/bin/` (it is also available as a [standalone download](https://docs.mender.io/downloads)). Wrap the new rootfs in a Mender artifact for the `qbootctl-rootfs` update module:
@@ -186,7 +190,7 @@ If anything goes wrong — the payload does not boot, or verification fails — 
 
 ## Conclusion
 
-We built a Mender-enabled image for the Arduino Uno Q, injected the site-specific WiFi credentials into the finished image instead of the build, flashed it over EDL with `qdl`, and ran a complete A/B rootfs update including the commit handshake against Hosted Mender. The same Update-Module approach extends to the other updatable part of this board — the STM32U585 firmware, which the integration flashes over an internal SWD link — but that is a topic for a separate article.
+We built a Mender-enabled image for the Arduino Uno Q with WiFi credentials provisioned by the `meta-mender-wifi` demo layer (or injected post-build where they must stay out of the build), flashed it over EDL with `qdl`, and ran a complete A/B rootfs update including the commit handshake against Hosted Mender. The same Update-Module approach extends to the other updatable part of this board — the STM32U585 firmware, which the integration flashes over an internal SWD link — but that is a topic for a separate article.
 
 ---
 
