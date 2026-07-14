@@ -67,3 +67,9 @@ local_conf_header:
     # flasher + module. OpenOCD's linuxgpiod uses the libgpiod v1 API here.
     PREFERRED_VERSION_libgpiod = "1.6.5"
     IMAGE_INSTALL:append = " openocd unoq-mcu-integration"
+
+  qcom-artifact: |
+    # Emit a deployable Mender artifact for the qbootctl-rootfs Update Module
+    # alongside the flashable qcomflash set (see the meta-mender-qcom README).
+    IMAGE_CLASSES += "image_types_mender_qcom"
+    IMAGE_FSTYPES += "mender-qbootctl"
