@@ -8,7 +8,7 @@ This tutorial walks through the full cycle on real hardware: building the image 
 
 Before we start, make sure you have:
 
-- An Arduino Uno Q, a USB-C data cable, and a jumper for the `JCTL` pins
+- An Arduino Uno Q, a USB-C data cable, and a jumper for the EDL pins on the `JCTL` header
 - A Linux build host with [kas](https://kas.readthedocs.io) installed, plus the usual Yocto host packages, and roughly 100 GB of free disk space
 - A [Hosted Mender](https://hosted.mender.io) account (the free trial is sufficient)
 - The `qdl` flashing tool, built from source:
@@ -43,7 +43,7 @@ git clone https://github.com/theyoctojester/mender-community-images
 cd mender-community-images
 ```
 
-The committed configuration deliberately contains neither a server URL, nor a tenant token, nor network credentials — all of that is site-specific. Create a small overlay file `my-site.yml` in the repository root that carries yours:
+The committed configuration deliberately contains neither a server URL, nor a tenant token, nor real network credentials (the wifi variant carries obvious `Demo_SSID` placeholders only) — all of that is site-specific. Create a small overlay file `my-site.yml` in the repository root that carries yours:
 
 ```
 header:
@@ -69,6 +69,8 @@ kas build yocto/wrynose/floating/uno-q-wifi.yml:my-site.yml
 
 This composes the Qualcomm BSP (`meta-qcom` and `meta-qcom-3rdparty`, which provide the `uno-q` machine, kernel and boot firmware), `meta-mender-core` on the `wrynose` branch, and the `meta-mender-qcom` integration layer, then builds `core-image-base`. Expect a first build to take an hour or more; incremental builds are much faster.
 
+Be aware that the composition follows meta-qcom's CI defaults, and those include `allow-root-login` with an *empty root password*. That is convenient on the lab bench and indefensible anywhere else — harden the image before it leaves yours.
+
 The `-wifi` variant extends the plain `uno-q.yml` with the `meta-mender-wifi` demo layer. Its single `demo-wifi` package generates `/etc/wpa_supplicant/wpa_supplicant-wlan0.conf` from the `DEMO_WIFI_*` variables at build time, adds a systemd-networkd DHCP configuration for `wlan*`, and enables the `wpa_supplicant@wlan0` service — the board comes up on your network on first boot, and stays connected across A/B deployments because every artifact built from this configuration carries the credentials. That is also the caveat: the passphrase is stored in plaintext in the image and in every artifact, so treat both as lab-internal and do not redistribute them. If that is not acceptable for your setup, build with the plain `uno-q.yml` and see step 3 for the alternative.
 
 Besides the rootfs, the interesting output is the `qcomflash` directory:
@@ -77,7 +79,7 @@ Besides the rootfs, the interesting output is the `qcomflash` directory:
 build/tmp/deploy/images/uno-q/core-image-base-uno-q.qcomflash/
 ```
 
-It contains the complete eMMC provisioning set: the Firehose programmer (`prog_firehose_ddr.elf`), the partition table description (`rawprogram0.xml`, `patch0.xml`), the boot chain, and the rootfs. The GPT it describes is the A/B variant provided by the integration layer: `system_a` and `system_b` for the OS, `dtbo_a`/`dtbo_b` (required by `qbootctl`), and a `userdata` partition that ends up mounted at `/data` for persistent Mender state. Both system slots are provisioned from the same `rootfs.img`, and `patch0.xml` grows `userdata` to the real eMMC size at flash time.
+It contains the complete eMMC provisioning set: the Firehose programmer (`prog_firehose_ddr.elf`), the partition table description (`rawprogram0.xml`, `patch0.xml`), the boot chain, and the rootfs. The GPT it describes is the A/B variant provided by the integration layer: `system_a`/`system_b` for the OS and `boot_a`/`boot_b` for the kernel, `dtbo_a`/`dtbo_b` (both `boot` and `dtbo` are hard-required by `qbootctl`'s slot switching), and a `userdata` partition that ends up mounted at `/data` for persistent Mender state — the device identity and the in-flight update bookkeeping that must survive the rootfs swap. Both system slots are provisioned from the same `rootfs.img` (and both boot slots from the same `boot.img`), and `patch0.xml` grows the `userdata` GPT entry to the real eMMC size at flash time; the filesystem in it is created and grown at first boot.
 
 ## Step 3: Alternative — keep the credentials out of the build
 
@@ -98,6 +100,8 @@ sudo mkdir -p mnt/etc/wpa_supplicant
 wpa_passphrase "MY_SSID" "MY_PASSPHRASE" | \
     sudo tee mnt/etc/wpa_supplicant/wpa_supplicant-wlan0.conf > /dev/null
 ```
+
+(For a hidden SSID, add `scan_ssid=1` inside the `network` block — `wpa_passphrase` does not emit it.)
 
 Configure DHCP on the interface:
 
@@ -125,7 +129,7 @@ One property of this injection approach to be aware of: the credentials live onl
 
 ## Step 4: Flash over EDL with qdl
 
-The QRB2210 is flashed through Qualcomm's Emergency Download mode (EDL). To enter it: disconnect the board from power, set a jumper across the `JCTL` pins, and connect the USB-C cable. The board enumerates as a Qualcomm loader device:
+The QRB2210 is flashed through Qualcomm's Emergency Download mode (EDL). To enter it: disconnect the board from power, short `USB_BOOT` to `GND` on the `JCTL` header — those are the two pins furthest from the USB-C connector — and connect the USB-C cable. Short exactly those two: the rest of the header carries the 1.8 V debug UART. The board enumerates as a Qualcomm loader device:
 
 ```
 lsusb | grep 05c6
@@ -139,20 +143,20 @@ cd build/tmp/deploy/images/uno-q/core-image-base-uno-q.qcomflash
 qdl --debug --storage emmc prog_firehose_ddr.elf rawprogram0.xml patch0.xml
 ```
 
-This writes all partitions and applies the GPT patches — around 25 seconds on USB high-speed. When `qdl` finishes, remove the `JCTL` jumper and re-plug the board; it now boots the freshly flashed system.
+This writes all partitions and applies the GPT patches — around 25 seconds on USB high-speed. When `qdl` finishes, remove the jumper and re-plug the board; it now boots the freshly flashed system.
 
-Two things worth knowing here. First, if a `qdl` run fails and you retry, always power-cycle into a *fresh* EDL session first — a half-used EDL session keeps failing with sahara errors. Second, `rawprogram0.xml` deliberately does not write any content to `userdata`, so reflashing preserves `/data`: a device that was already accepted on the Mender server keeps its identity and reappears without a new authorization request.
+Two things worth knowing here. First, if a `qdl` run fails and you retry, always power-cycle into a *fresh* EDL session first — a half-used EDL session keeps failing with sahara errors. Second, `rawprogram0.xml` deliberately does not write any content to `userdata`, so as long as the partition layout is unchanged, reflashing preserves `/data`: a device that was already accepted on the Mender server keeps its identity and reappears without a new authorization request. (A reflash rewrites the GPT — `/data` survives because the new table places `userdata` at the identical sectors. Change the layout and that guarantee is gone.)
 
 ## Step 5: Verify against Hosted Mender
 
 On first boot the device joins the WLAN, syncs its clock (the board has no RTC, and the TLS connection to the server only succeeds after `systemd-timesyncd` has done its job — give it a minute), and requests authorization. On Hosted Mender, the device shows up under *Devices* as pending, identified by its `wlan0` MAC address. Accept it.
 
-Shortly after, the inventory fills in: `device_type: uno-q`, the kernel version, and the IP address on `wlan0`. The reported `artifact_name` is `unknown` at this point — expected, and worth understanding: this integration installs only the Mender client, not Mender's image-based artifact bookkeeping, so a system that was flashed rather than deployed has no artifact name to report. It gets one with the first successful deployment.
+Shortly after, the inventory fills in: `device_type: uno-q`, the kernel version, and the IP address on `wlan0`. The reported `artifact_name` is `unknown` at this point — expected, and worth understanding: this integration installs only the Mender client (plus `mender-connect`), not Mender's image-based artifact bookkeeping, so a system that was flashed rather than deployed has no artifact name to report. It gets one with the first successful deployment.
 
 Since the image includes `mender-connect`, the *Remote Terminal* works too, which is handy to confirm the slot state:
 
 ```
-# qbootctl -c
+# qbootctl -c 2>/dev/null
 Current slot: _a
 # mount | grep " / "
 /dev/mmcblk0p75 on / type ext4 (rw,relatime)
@@ -160,7 +164,7 @@ Current slot: _a
 lrwxrwxrwx 1 root root 16 Jan  1  1970 /dev/disk/by-partlabel/system_a -> ../../mmcblk0p75
 ```
 
-A fresh flash always boots slot A. One thing *not* to use as a slot check: `root=` in `/proc/cmdline`. It always shows `PARTLABEL=system_a` — that is the baked fallback, and the slot-aware initramfs overrides the actual root mount, not the kernel command line. `qbootctl -c` or the mounted device are the truth.
+Without the `2>/dev/null`, two harmless warnings precede the output: `qbootctl` first looks for a `slot_suffix` kernel argument that this platform does not pass, then falls back to the GPT active bit. A fresh flash comes up on slot A — not because the flashed GPT marks it active (it marks nothing; no slot carries any A/B attribute after provisioning), but because slot A is the fallback every component agrees on. And one thing *not* to use as a slot check: `root=` in `/proc/cmdline`. It always shows `PARTLABEL=system_a` — that is the baked fallback, and the slot-aware initramfs overrides the actual root mount, not the kernel command line. `qbootctl -c` or the mounted device are the truth.
 
 ## Step 6: Deploy an A/B update
 
@@ -183,11 +187,11 @@ The build directly emits the deployable artifact — the uno-q configuration ena
 build/tmp/deploy/images/uno-q/core-image-base-uno-q.mender
 ```
 
-If you ever need to craft one by hand — say, for a rootfs that came out of a different build — the equivalent is `mender-artifact write module-image -T qbootctl-rootfs -n <name> -t uno-q -f <rootfs>.ext4` with the tool from [downloads.mender.io](https://docs.mender.io/downloads) or from `bitbake mender-artifact-native`.
+If you ever need to craft one by hand — say, for a rootfs that came out of a different build — the equivalent is `mender-artifact write module-image -T qbootctl-rootfs -n <name> -t uno-q -f <rootfs>.ext4 -o <name>.mender` with the tool from [downloads.mender.io](https://docs.mender.io/downloads) or from `bitbake mender-artifact-native`.
 
-Upload the `.mender` file on Hosted Mender under *Releases* and create a deployment targeting the device. The update module then does the slot dance: it streams the payload to the inactive slot (`system_b`), marks it active via `qbootctl`, and reboots. The slot-aware initramfs mounts the new slot, Mender verifies it is indeed running from the expected slot, and commits the update — only then is the new slot blessed as bootable. The deployment reports *Success*, and the device now shows `artifact_name: uno-q-v2` running from `system_b` (verify with `qbootctl -c` or the mounted root device, as in step 5 — not `/proc/cmdline`).
+Upload the `.mender` file on Hosted Mender under *Releases* and create a deployment targeting the device. The update module then does the slot dance: while downloading, it streams the payload straight to the inactive slot (`system_b`, on this first update); at install it marks that slot active via `qbootctl` and reboots — so a failed download never touches the slot state. After the reboot the slot-aware initramfs selects the new slot as root, Mender verifies the active slot is the one it installed, and commits it with `qbootctl -m`, marking the slot *successful* — the slot was bootable since install; the commit is what stops the boot chain's fallback logic from discarding it. The deployment reports *Success*, and the device now shows `artifact_name: uno-q-v2` running from `system_b` (verify with `qbootctl -c` or the mounted root device, as in step 5 — not `/proc/cmdline`).
 
-If anything goes wrong — the payload does not boot, or verification fails — the mechanism rolls back: the initramfs detects the unbootable slot, switches back to the previous one, and the deployment ends in *Failure* with the device untouched on its known-good slot. It is worth provoking this once with a deliberately broken artifact just to watch it happen; confidence in the rollback path is the reason to use A/B updates in the first place.
+If anything goes wrong, more than one safety net is in place. A payload without a mountable filesystem is caught by the initramfs: it test-mounts the active slot, and on failure switches back to the previous slot *and commits it* — without that commit the boot chain would bounce straight back into the bad slot — then reboots. A slot that boots but fails Mender's verification is rolled back by the client itself. Either way the deployment ends in *Failure*, with the running system and `/data` untouched on the known-good slot (the inactive slot, of course, still holds the bad payload until the next deployment overwrites it). It is worth provoking this once with a deliberately broken artifact just to watch it happen; confidence in the rollback path is the reason to use A/B updates in the first place.
 
 ## Conclusion
 
