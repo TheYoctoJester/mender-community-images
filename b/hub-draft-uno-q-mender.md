@@ -173,15 +173,15 @@ Rebuild:
 kas build yocto/wrynose/floating/uno-q-wifi.yml:my-site.yml
 ```
 
-The build directly emits the deployable artifact — the uno-q configuration enables `meta-mender-qcom`'s `mender-qbootctl` image type, which wraps the new rootfs for the `qbootctl-rootfs` update module:
+The build directly emits the deployable artifact — the uno-q configuration enables `meta-mender-qcom`'s artifact image type, which wraps the new rootfs for the `qbootctl-rootfs` update module:
 
 ```
-build/tmp/deploy/images/uno-q/core-image-base-uno-q.mender-qbootctl
+build/tmp/deploy/images/uno-q/core-image-base-uno-q.mender
 ```
 
-This is a regular Mender artifact; only the extension differs from the usual `.mender`, to keep it apart from meta-mender's dual-rootfs image type. If you ever need to craft one by hand — say, for a rootfs that came out of a different build — the equivalent is `mender-artifact write module-image -T qbootctl-rootfs -n <name> -t uno-q -f <rootfs>.ext4` with the tool from [downloads.mender.io](https://docs.mender.io/downloads) or from `bitbake mender-artifact-native`.
+If you ever need to craft one by hand — say, for a rootfs that came out of a different build — the equivalent is `mender-artifact write module-image -T qbootctl-rootfs -n <name> -t uno-q -f <rootfs>.ext4` with the tool from [downloads.mender.io](https://docs.mender.io/downloads) or from `bitbake mender-artifact-native`.
 
-Upload the `.mender-qbootctl` file on Hosted Mender under *Releases* and create a deployment targeting the device. The update module then does the slot dance: it streams the payload to the inactive slot (`system_b`), marks it active via `qbootctl`, and reboots. The slot-aware initramfs mounts the new slot, Mender verifies it is indeed running from the expected slot, and commits the update — only then is the new slot blessed as bootable. The deployment reports *Success*, and the device now shows `artifact_name: uno-q-v2` running from `PARTLABEL=system_b`.
+Upload the `.mender` file on Hosted Mender under *Releases* and create a deployment targeting the device. The update module then does the slot dance: it streams the payload to the inactive slot (`system_b`), marks it active via `qbootctl`, and reboots. The slot-aware initramfs mounts the new slot, Mender verifies it is indeed running from the expected slot, and commits the update — only then is the new slot blessed as bootable. The deployment reports *Success*, and the device now shows `artifact_name: uno-q-v2` running from `PARTLABEL=system_b`.
 
 If anything goes wrong — the payload does not boot, or verification fails — the mechanism rolls back: the initramfs detects the unbootable slot, switches back to the previous one, and the deployment ends in *Failure* with the device untouched on its known-good slot. It is worth provoking this once with a deliberately broken artifact just to watch it happen; confidence in the rollback path is the reason to use A/B updates in the first place.
 
