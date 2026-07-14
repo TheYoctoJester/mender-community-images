@@ -3,12 +3,10 @@ header:
   includes:
   - raspberrypi4-64.yml
 
-target: core-image-raspberrypi-wifi
-
 repos:
   mender-community-images:
     layers:
-      yocto/scarthgap/demos/meta-mender-raspberrypi-wifi:
+      yocto/scarthgap/demos/meta-mender-wifi:
 
   meta-mender-community:
     layers:
@@ -16,6 +14,7 @@ repos:
 
 local_conf_header:
   wifi: |
+    IMAGE_INSTALL:append = " demo-wifi"
     DEMO_WIFI_SSID = "Demo_SSID"
     DEMO_WIFI_PASSKEY = "Demo_Password"
     LICENSE_FLAGS_ACCEPTED = "synaptics-killswitch"
