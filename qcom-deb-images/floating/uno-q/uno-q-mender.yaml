@@ -1,0 +1,123 @@
+---
+# Arduino Uno Q Mender integration stage — runs between the upstream
+# qcom-deb-images rootfs recipe and image recipe:
+#
+#   1. qcom-deb-images/debos-recipes/qualcomm-linux-debian-rootfs.yaml -> rootfs.tar
+#   2. THIS RECIPE: unpack rootfs.tar, add Mender client + qbootctl A/B
+#      integration, repack rootfs.tar
+#   3. qcom-deb-images/debos-recipes/qualcomm-linux-debian-image.yaml
+#      -> disk-sdcard.img (+ .img1 ESP, .img2 rootfs ext4)
+#
+# The A/B mechanism is the platform's native Qualcomm boot-slot scheme
+# (qbootctl + ABL), ported from the Yocto uno-q integration
+# (meta-mender-community/meta-mender-qcom): slot-aware initramfs root
+# selection, the qbootctl-rootfs update module, persistent Mender state on the
+# userdata partition, and a bless gate so Mender owns commit/rollback during an
+# update. See overlay/ and README.md.
+#
+# Ordering matters: the upstream rootfs recipe already installed the kernel,
+# initramfs-tools and qbootctl, so the update-initramfs run below bakes the
+# abslot hook + qbootctl into the initrd; the upstream image recipe afterwards
+# installs systemd-boot, which copies exactly this initrd to the ESP.
+{{- $tenant_token := or .tenant_token "" }}
+{{- $device_type := or .device_type "uno-q-debian" }}
+{{- $artifact_name := or .artifact_name "unoq-debian-v1" }}
+{{- $server_url := or .server_url "https://hosted.mender.io" }}
+{{- $wifi_ssid := or .wifi_ssid "" }}
+{{- $wifi_psk := or .wifi_psk "" }}
+
+architecture: arm64
+
+actions:
+  - action: unpack
+    description: Unpack the upstream root filesystem
+    file: rootfs.tar
+
+  - action: overlay
+    description: Install Mender A/B integration files (initramfs hook, update module, units)
+    source: overlay
+
+  - action: run
+    description: Add the Mender APT repository and install the Mender client
+    chroot: true
+    command: |
+      set -eux
+      arch="$(dpkg --print-architecture)"
+      curl -fsSL https://downloads.mender.io/repos/debian/gpg \
+        -o /etc/apt/trusted.gpg.d/mender.asc
+      echo "deb [arch=${arch}] https://downloads.mender.io/repos/device-components debian/trixie/stable main" \
+        > /etc/apt/sources.list.d/mender.list
+      apt-get update
+      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        mender-client4 mender-flash mender-connect openssh-server
+      # Enable the Mender services (names differ across client generations).
+      systemctl enable mender-updated.service 2>/dev/null || true
+      systemctl enable mender-authd.service 2>/dev/null || true
+      systemctl enable mender-client.service 2>/dev/null || true
+
+  - action: run
+    description: Configure Mender and wire the qbootctl A/B integration
+    chroot: true
+    command: |
+      set -eux
+      mkdir -p /etc/mender /var/lib/mender /data
+      cat > /etc/mender/mender.conf <<'MENDERCONF'
+      {
+        "ServerURL": "{{ $server_url }}",
+        "TenantToken": "{{ $tenant_token }}",
+        "UpdatePollIntervalSeconds": 30,
+        "InventoryPollIntervalSeconds": 300,
+        "RetryPollIntervalSeconds": 30
+      }
+      MENDERCONF
+      echo "device_type={{ $device_type }}" > /var/lib/mender/device_type
+      echo "artifact_name={{ $artifact_name }}" > /etc/mender/artifact_info
+      chmod 0755 /usr/local/bin/unoq-mender-persist \
+                 /usr/share/mender/modules/v3/qbootctl-rootfs \
+                 /etc/initramfs-tools/hooks/qbootctl \
+                 /etc/initramfs-tools/scripts/local-top/abslot
+      systemctl enable unoq-mender-persist.service
+      # belt: the Debian qbootctl package enables its bless service via dh
+      # defaults; make sure it is on (the overlay drop-in gates it during updates)
+      systemctl enable qbootctl.service 2>/dev/null || true
+      # Bake the abslot hook + qbootctl into the initrd. The image recipe's
+      # systemd-boot install copies this initrd to the ESP.
+      update-initramfs -u -k all
+
+{{- if $wifi_ssid }}
+  - action: run
+    description: Lab-only access - WiFi credentials + non-expired debian user (never in CI)
+    chroot: true
+    command: |
+      set -eux
+      install -d -m 0700 /etc/NetworkManager/system-connections
+      cat > /etc/NetworkManager/system-connections/lab.nmconnection <<'NMCONN'
+      [connection]
+      id=lab
+      type=wifi
+      autoconnect=true
+
+      [wifi]
+      ssid={{ $wifi_ssid }}
+      mode=infrastructure
+
+      [wifi-security]
+      key-mgmt=wpa-psk
+      psk={{ $wifi_psk }}
+
+      [ipv4]
+      method=auto
+
+      [ipv6]
+      method=auto
+      NMCONN
+      chmod 0600 /etc/NetworkManager/system-connections/lab.nmconnection
+      # upstream expires the debian user's password (forced change on first
+      # login), which breaks scripted ssh; unexpire it for lab images
+      chage --lastday -1 debian
+{{- end }}
+
+  - action: pack
+    description: Repack the root filesystem for the upstream image recipe
+    file: rootfs.tar
+    compression: none
