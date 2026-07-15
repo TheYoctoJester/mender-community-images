@@ -7,7 +7,7 @@ The Arduino Uno Q pairs a Qualcomm Dragonwing QRB2210 running Linux with an STM3
 * **Vendor URL:** [Arduino UNO Q](https://docs.arduino.cc/hardware/uno-q/)
 * **Wiki:** [UNO Q user manual](https://docs.arduino.cc/tutorials/uno-q/user-manual/)
 * **MCU:** STM32U585 (Arm Cortex-M33)
-* **Zephyr board:** `arduino_uno_q` (upstream in Zephyr 4.4)
+* **Zephyr board:** `arduino_uno_q` (upstream since Zephyr 4.3)
 * **Yocto `MACHINE`:** `arduino-uno-q`, built as the `mcu` multiconfig
 * **Config in `mender-community-images`:** `yocto/wrynose/floating/uno-q-mcu-firmware.yml`
 
@@ -39,7 +39,7 @@ kas build yocto/wrynose/floating/uno-q-mcu-firmware.yml
 
 This configuration extends the plain `uno-q.yml` with `meta-zephyr` (branch `wrynose`) and `meta-python`, and enables a second build configuration next to the Linux image: `BBMULTICONFIG = "mcu"`. The `mcu` multiconfig (shipped by the integration layer) sets `MACHINE = "arduino-uno-q"`, a Cortex-M33 machine building against newlib, and gives itself a separate `TMPDIR` (`tmp-mcu`), because the aarch64 and Cortex-M33 configurations would otherwise collide in the shared native tool workdirs. The build targets are the Linux image plus `mc:mcu:zephyr-unoq-blink`.
 
-`zephyr-unoq-blink` is the demo firmware: a Zephyr application for the upstream `arduino_uno_q` board that blinks the user LED and embeds a version marker in its read-only data, so the running firmware can be identified over SWD:
+`zephyr-unoq-blink` is the demo firmware: a Zephyr application for the upstream `arduino_uno_q` board that blinks one of the user-programmable RGB LEDs (`led0` maps to the green channel of LED 3) and embeds a version marker in its read-only data, so the running firmware can be identified over SWD:
 
 ```
 __attribute__((used, section(".rodata.fw_version")))
@@ -69,7 +69,7 @@ mender-artifact write module-image -T zephyr-mcu -n unoq-mcu-v1 -t uno-q \
     -o unoq-mcu-v1.mender
 ```
 
-The update type `zephyr-mcu` selects the Update Module on the device; the device type stays `uno-q`, so both rootfs and MCU artifacts target the same device.
+The update type `zephyr-mcu` selects the Update Module on the device; the device type stays `uno-q`, so both rootfs and MCU artifacts target the same device. Current `mender-artifact` versions print a deprecation warning for `-t`; the successor flag is `--compatible-types uno-q`.
 
 ## Deploying through Mender
 
@@ -79,7 +79,7 @@ The module answers `NeedsArtifactReboot: No`. Only the MCU resets into the new f
 
 ## Verifying
 
-If you changed `BLINK_PERIOD_MS`, the user LED gives instant visual feedback. For a rigorous check, read the version marker back over the same SWD link, on the device (Remote Terminal or ssh):
+If you changed `BLINK_PERIOD_MS`, the LED gives instant visual feedback. For a rigorous check, read the version marker back over the same SWD link, on the device (Remote Terminal or ssh):
 
 ```
 # openocd -f /usr/share/unoq-mcu/openocd_gpiod.cfg -c init -c halt \
@@ -105,7 +105,13 @@ For a second round, bump both knobs in your overlay (`my-site.yml` from the main
     BLINK_PERIOD_MS = "100"
 ```
 
-Rebuild, package as `unoq-mcu-v2`, deploy: the LED visibly changes pace and the marker reads `UNOQMCU:unoq-mcu-v2`.
+Rebuild with the overlay in the chain, package as `unoq-mcu-v2`, deploy:
+
+```
+kas build yocto/wrynose/floating/uno-q-mcu-firmware.yml:my-site.yml
+```
+
+The LED visibly changes pace and the marker reads `UNOQMCU:unoq-mcu-v2`.
 
 ## Rollback
 
@@ -117,7 +123,7 @@ mender-artifact write module-image -T zephyr-mcu -n unoq-mcu-bad -t uno-q \
     -f broken.hex -o unoq-mcu-bad.mender
 ```
 
-Deploy it. OpenOCD refuses to program the truncated image, the verification never reports "Verified OK", the install step fails, and the module's rollback re-programs `/data/mcu-fw/previous.bin`. The deployment ends in *Failure*, and the marker still reads the previous version. The MCU never runs a partially flashed image: the failure is caught by the read-back verification before the firmware is handed control.
+Deploy it. OpenOCD parses the whole image before touching flash, so the truncated hex is rejected outright and nothing is written; the install step fails, and the module's rollback re-programs `/data/mcu-fw/previous.bin`. The deployment ends in *Failure*, and the marker still reads the previous version. Failures later in the process are covered as well: OpenOCD only resets the MCU after a successful read-back verification, so on a genuine mid-write failure the MCU stays halted until the rollback has restored the backup.
 
 # References
 
@@ -126,7 +132,7 @@ Deploy it. OpenOCD refuses to program the truncated image, the verification neve
 * [Mender Update Modules](https://docs.mender.io/artifacts/update-modules): how non-rootfs update types work.
 * [`mender-community-images`](https://github.com/theyoctojester/mender-community-images): the build configurations used above.
 * [meta-zephyr](https://git.yoctoproject.org/meta-zephyr/): Zephyr integration for the Yocto Project.
-* [Zephyr Project documentation](https://docs.zephyrproject.org/): the `arduino_uno_q` board is upstream as of Zephyr 4.4.
+* [Zephyr Project documentation](https://docs.zephyrproject.org/): the `arduino_uno_q` board has been upstream since Zephyr 4.3; this integration builds Zephyr 4.4.
 
 # Known issues
 
@@ -135,5 +141,6 @@ Deploy it. OpenOCD refuses to program the truncated image, the verification neve
 * OpenOCD leaves the two SWD GPIO lines configured as outputs after a session. This is harmless; the next session reconfigures them.
 * There is no MCUboot and no signature verification on the MCU: the firmware is a plain image linked at flash base (0x08000000), and the SWD read-back verifies integrity, not authenticity. Treat the Mender server access as the trust boundary.
 * The first deployment persistently (though reversibly, over SWD) changes the STM32 boot option bytes.
+* The rollback depends on the backup at `/data/mcu-fw/previous.bin`. If that file is missing (for example after wiping `/data`), a failed installation leaves the MCU halted on the partial image until the next successful deployment.
 * `artifact_name` is shared across update types; track the rootfs and MCU versions through their provides keys instead.
 * The Cortex-M33 tune of current oe-core emits a `-mcpu=cortex-m33+dsp` flag that GCC 16 rejects; the `arduino-uno-q` machine configuration carries the workaround (`TUNE_CCARGS_MARCH_OPTS = ""`), so this only concerns you if you build the firmware outside the provided configuration.
