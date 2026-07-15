@@ -1,5 +1,3 @@
-# A/B system updates on the Arduino Uno Q with Mender
-
 The Arduino Uno Q pairs a Qualcomm Dragonwing QRB2210 running Linux with an STM32U585 microcontroller on a single board. That makes it an interesting target for robust OTA updates: the Qualcomm boot chain already ships a native A/B slot mechanism (ABL plus `qbootctl`), so instead of retrofitting Mender's classic dual-rootfs layout with U-Boot or GRUB integration, the Mender integration for this board reuses the platform's own slots and drives them from a custom Update Module. The integration lives upstream in `meta-mender-community` (layer `meta-mender-qcom`, branch `wrynose`).
 
 This tutorial walks through the full cycle on real hardware: building the image with kas, WiFi credentials included, flashing the board over Qualcomm EDL with `qdl`, verifying the device against Hosted Mender, and finally deploying an A/B rootfs update.
