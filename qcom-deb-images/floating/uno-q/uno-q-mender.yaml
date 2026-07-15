@@ -98,6 +98,22 @@ actions:
       # systemd-boot BLS entry.
       mkdir -p /etc/kernel
       echo "console=ttyMSM0,115200n8 rw" > /etc/kernel/cmdline
+      # NetworkManager maintains /run/NetworkManager/resolv.conf but never
+      # creates /etc/resolv.conf on this image -> DNS fails for every client
+      # (mender-auth: "Host not found"). Point the standard path at NM's copy.
+      ln -sf /run/NetworkManager/resolv.conf /etc/resolv.conf
+      # systemd-timesyncd races the early read-only-root window: its state
+      # directory is absent from the image, creation fails (238/STATE_DIRECTORY)
+      # and the start-rate limit permanently kills the service -> the RTC-less
+      # clock stays at the systemd epoch and TLS to the Mender server fails
+      # ("certificate not yet valid"). Pre-create the state directory and order
+      # the service after the root remount.
+      install -d -o systemd-timesync -g systemd-timesync /var/lib/systemd/timesync
+      install -d /etc/systemd/system/systemd-timesyncd.service.d
+      cat > /etc/systemd/system/systemd-timesyncd.service.d/10-after-remount.conf <<'TSYNC'
+      [Unit]
+      After=systemd-remount-fs.service
+      TSYNC
       # Bake the abslot hook + qbootctl into the initrd. The image recipe's
       # systemd-boot install copies this initrd to the ESP.
       update-initramfs -u -k all
