@@ -57,13 +57,31 @@ fi
 export TMPDIR="$WORK/tmp"
 mkdir -p "$TMPDIR"
 
-DEBOS="debos --fakemachine-backend $DEBOS_BACKEND --memory 2GiB --scratchsize 12GiB --artifactdir $WORK"
+# debos is run with cwd = $WORK (the artifact dir): the upstream image
+# recipe's postprocess step addresses disk-sdcard.img by a RELATIVE path, so
+# the working directory must be the artifact dir (as with upstream's Makefile).
+DEBOS="debos --fakemachine-backend $DEBOS_BACKEND --memory 2GiB --scratchsize 12GiB"
 
-echo "=== stage 1: upstream rootfs (Debian trixie arm64) ==="
+# Kernel: the Debian/backports kernel does not boot the Uno Q usefully (no
+# imola dtb, qcm2290 platform bring-up defers forever). Arduino publishes the
+# board's kernel (same one the Yocto uno-q integration runs) on their public
+# apt repository; inject that repository as a stage-1 overlay and select the
+# kernel via the recipe's kernelpackages variable. The dtbs.tar.gz stage 1
+# emits then carries the imola dtb for the flash set.
+KERNEL_PACKAGE="${KERNEL_PACKAGE:-linux-image-7.0.0-g122c2c22d838}"
+
+echo "=== stage 1: upstream rootfs (Debian trixie arm64, Arduino kernel) ==="
 if [ "${KEEP_ROOTFS:-0}" = "1" ] && [ -f "$WORK/rootfs-base.tar" ]; then
     echo "reusing cached rootfs-base.tar"
 else
-    $DEBOS "$QCOM_DEB_IMAGES/debos-recipes/qualcomm-linux-debian-rootfs.yaml"
+    # debos overlays resolve relative to the recipe dir only, so the Arduino
+    # apt-repo overlay must sit in the upstream checkout's overlays dir
+    cp -a "$HERE/stage1-overlays/arduino-unoq-releases" \
+        "$QCOM_DEB_IMAGES/debos-recipes/overlays/"
+    ( cd "$WORK" && $DEBOS \
+        -t overlays:qsc-deb-releases,arduino-unoq-releases \
+        -t "kernelpackages:$KERNEL_PACKAGE" \
+        "$QCOM_DEB_IMAGES/debos-recipes/qualcomm-linux-debian-rootfs.yaml" )
     cp "$WORK/rootfs.tar" "$WORK/rootfs-base.tar"
 fi
 cp "$WORK/rootfs-base.tar" "$WORK/rootfs.tar"
@@ -78,11 +96,11 @@ MENDER_ARGS=(
 if [ -n "$WIFI_SSID" ]; then
     MENDER_ARGS+=( -t "wifi_ssid:$WIFI_SSID" -t "wifi_psk:$WIFI_PSK" )
 fi
-$DEBOS "${MENDER_ARGS[@]}" "$HERE/uno-q-mender.yaml"
+( cd "$WORK" && $DEBOS "${MENDER_ARGS[@]}" "$HERE/uno-q-mender.yaml" )
 
 echo "=== stage 3: upstream disk image (sdcard/eMMC variant) ==="
-$DEBOS -t imagetype:sdcard -t "imagesize:$IMAGESIZE" \
-    "$QCOM_DEB_IMAGES/debos-recipes/qualcomm-linux-debian-image.yaml"
+( cd "$WORK" && $DEBOS -t imagetype:sdcard -t "imagesize:$IMAGESIZE" \
+    "$QCOM_DEB_IMAGES/debos-recipes/qualcomm-linux-debian-image.yaml" )
 
 img2_size=$(stat -c %s "$WORK/disk-sdcard.img2")
 if [ "$img2_size" -gt "$SLOT_BYTES" ]; then

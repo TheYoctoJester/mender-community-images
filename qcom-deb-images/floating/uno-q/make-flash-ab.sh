@@ -115,12 +115,16 @@ find "$BOOTBIN" \
     \) \
     -exec cp --preserve=mode,timestamps '{}' "$FLASH_DIR" \;
 
-# dtb-combineddtb.bin: FAT with the board device tree as combined-dtb.dtb
-# (mirrors the upstream flash recipe verbatim, including the 4096-byte FAT
-# sector size)
+# dtb-combineddtb.bin: FAT with the board device tree as combined-dtb.dtb.
+# DELIBERATE deviation from the upstream flash recipe: upstream uses
+# `mkfs.vfat -S 4096` (a UFS sector size — its comment admits combineddtb "is
+# only used in UFS based boards at the moment"), but the Uno Q is 512-byte-
+# sector eMMC and its U-Boot hangs silently after ABL when the dtb partition
+# carries a 4096-byte-sector FAT. The proven Yocto uno-q flash set uses a
+# default 512-byte-sector FAT — reproduce that.
 DTB_BIN="$FLASH_DIR/dtb-combineddtb.bin"
 rm -f "$DTB_BIN"
-mkfs.vfat -S 4096 -C "$DTB_BIN" 4096
+mkfs.vfat -C "$DTB_BIN" 4096
 mkdir -p "$WORK/dtb-extract"
 tar -C "$WORK/dtb-extract" -xf "$WORK/dtbs.tar.gz" "$BOARD_DTB"
 mcopy -mp -i "$DTB_BIN" "$WORK/dtb-extract/$BOARD_DTB" ::/combined-dtb.dtb

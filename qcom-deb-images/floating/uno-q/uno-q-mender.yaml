@@ -38,18 +38,27 @@ actions:
     source: overlay
 
   - action: run
+    description: Fetch the Mender APT repository key (target rootfs has no curl)
+    chroot: false
+    command: |
+      set -eux
+      curl -fsSL https://downloads.mender.io/repos/debian/gpg \
+        -o "${ROOTDIR}/etc/apt/trusted.gpg.d/mender.asc"
+
+  - action: run
     description: Add the Mender APT repository and install the Mender client
     chroot: true
     command: |
       set -eux
-      arch="$(dpkg --print-architecture)"
-      curl -fsSL https://downloads.mender.io/repos/debian/gpg \
-        -o /etc/apt/trusted.gpg.d/mender.asc
-      echo "deb [arch=${arch}] https://downloads.mender.io/repos/device-components debian/trixie/stable main" \
+      echo "deb [arch=arm64] https://downloads.mender.io/repos/device-components debian/trixie/stable main" \
         > /etc/apt/sources.list.d/mender.list
       apt-get update
       DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         mender-client4 mender-flash mender-connect openssh-server
+      # WiFi/BT firmware for the Uno Q's radio, from the Arduino apt repository
+      # (added as a stage-1 overlay; also provides the board kernel)
+      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        arduino-unoq-radio-firmware
       # Enable the Mender services (names differ across client generations).
       systemctl enable mender-updated.service 2>/dev/null || true
       systemctl enable mender-authd.service 2>/dev/null || true
@@ -80,6 +89,15 @@ actions:
       # belt: the Debian qbootctl package enables its bless service via dh
       # defaults; make sure it is on (the overlay drop-in gates it during updates)
       systemctl enable qbootctl.service 2>/dev/null || true
+      # Serial console on the Uno Q debug UART, and "rw": our A/B fstab has no
+      # "/" entry (root is selected by the initramfs abslot override), so
+      # nothing remounts root read-write -- without "rw" the kernel default
+      # leaves / read-only and timesyncd/logind/Docker all fail. The upstream
+      # image recipe's filesystem-deploy PREPENDS this file's content when it
+      # writes root=UUID=... into /etc/kernel/cmdline, so both end up in the
+      # systemd-boot BLS entry.
+      mkdir -p /etc/kernel
+      echo "console=ttyMSM0,115200n8 rw" > /etc/kernel/cmdline
       # Bake the abslot hook + qbootctl into the initrd. The image recipe's
       # systemd-boot install copies this initrd to the ESP.
       update-initramfs -u -k all
