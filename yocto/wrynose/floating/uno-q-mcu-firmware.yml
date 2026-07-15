@@ -13,7 +13,8 @@
 #   kas build yocto/wrynose/floating/uno-q-mcu-firmware.yml
 # then package the firmware as an artifact:
 #   mender-artifact write module-image -T zephyr-mcu -n unoq-mcu-v1 -t uno-q \
-#     -f tmp-mcu/deploy/images/arduino-uno-q/zephyr-unoq-blink-arduino-uno-q.hex
+#     -f tmp-mcu/deploy/images/arduino-uno-q/zephyr-unoq-blink-arduino-uno-q.hex \
+#     -o unoq-mcu-v1.mender
 
 header:
   version: 14
