@@ -6,8 +6,9 @@
 # sub-layer) in meta-mender-community.
 #
 # EXPERIMENTAL: meta-xilinx has no released wrynose branch yet, so this pins its
-# wrynose-next staging branch. The config has not been build- or
-# hardware-verified on wrynose (the scarthgap variant is the tested one).
+# wrynose-next staging branch. The build and a full Mender rootfs A/B update
+# plus power-cut rollback have been verified on hardware (v2026.1 stack); treat
+# as experimental until meta-xilinx cuts a wrynose branch.
 #
 # The Vivado-free bitstream build flow used to produce fpga-bitstream artifacts
 # lives in the Arty Z7-20 Mender Hub tutorial, not in this repository.
@@ -41,10 +42,12 @@ local_conf_header:
     MENDER_FEATURES_ENABLE:append = " mender-uboot mender-image-sd"
     MENDER_FEATURES_DISABLE:append = " mender-grub mender-image-uefi"
     PREFERRED_PROVIDER_u-boot = "u-boot-xlnx"
-    # Pin the xlnx component set (linux-xlnx 6.12, u-boot-xlnx 2025.01) so a
-    # future meta-xilinx default bump cannot change component versions. This is
-    # also the set the Mender U-Boot patches were rebased against.
-    XILINX_RELEASE_VERSION = "v2025.1"
+    # Pin the xlnx component set (linux-xlnx 6.18, u-boot-xlnx 2026.01) so a
+    # future meta-xilinx default bump cannot change component versions. wrynose
+    # needs the 2026.01 U-Boot: meta-mender's wrynose U-Boot integration expects
+    # the 2026.01+ Kconfig symbol names (e.g. CONFIG_ENV_REDUNDANT), which the
+    # 2025.01 U-Boot does not have.
+    XILINX_RELEASE_VERSION = "v2026.1"
     # FPGA (PL) bitstream OTA. Deploy bitstream artifacts built per the Arty
     # Z7-20 Mender Hub tutorial (Vivado-free openXC7 flow) with `mender-artifact
     # write module-image -T fpga-bitstream --software-filesystem data-partition`.
