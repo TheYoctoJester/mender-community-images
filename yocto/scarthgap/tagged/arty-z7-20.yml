@@ -1,29 +1,30 @@
 # Digilent Arty Z7-20 (Zynq-7000 xc7z020, 512 MB DDR3) — Mender OTA build,
 # including FPGA (PL) bitstream OTA via the fpga-bitstream update module.
-# Floating variant: layers track their branch tips.
+# Tagged variant: every repository pinned to a specific commit.
 #
 # Board support comes from meta-mender-xilinx (+ the nested meta-arty-z7 BSP
-# sub-layer) in meta-mender-community.
+# sub-layer) in meta-mender-community. The meta-xilinx commit is the scarthgap
+# head the integration was built and tested against.
 #
 # The Vivado-free bitstream build flow used to produce fpga-bitstream artifacts
 # lives in the Arty Z7-20 Mender Hub tutorial, not in this repository.
 header:
   version: 14
   includes:
-  - include/mender-full.yml
-  - include/arm.yml
+  - ../include/mender-full.yml
+  - ../include/arm.yml
 
 repos:
   meta-mender-community:
     url: https://github.com/mendersoftware/meta-mender-community.git
-    branch: scarthgap
+    commit: 7297cd72d320b368ade7d072cc3b162365a44cc9
     layers:
       meta-mender-xilinx:
       meta-mender-xilinx/meta-arty-z7:
 
   meta-xilinx:
     url: https://github.com/Xilinx/meta-xilinx
-    branch: scarthgap
+    commit: 936845b97ab1ff035108f219f4e7cfef5401eb02
     layers:
       meta-xilinx-core:
 

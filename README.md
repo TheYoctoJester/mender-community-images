@@ -123,7 +123,7 @@ The authoritative list is the contents of `yocto/<release>/{tagged,floating}/`. 
 - **NXP/Freescale (experimental)** — `olimex-imx8mp-evb`, `imx93-var-som` (Variscite).
 - **RISC-V (experimental)** — `nezha-allwinner-d1`.
 - **Intel** — `x86-virtual`.
-- **Xilinx/AMD Zynq (experimental)** — `arty-z7-20` (Digilent Arty Z7-20), with Mender OTA plus the FPGA (PL) bitstream update module. Floating only for now, pending the `meta-mender-xilinx` layer merge into meta-mender-community.
+- **Xilinx/AMD Zynq (experimental)** — `arty-z7-20` (Digilent Arty Z7-20), with Mender OTA plus the FPGA (PL) bitstream update module. Board support comes from the `meta-mender-xilinx` layer in meta-mender-community.
 
 ### Kirkstone (on-demand only)
 
