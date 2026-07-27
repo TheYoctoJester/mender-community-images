@@ -2,7 +2,7 @@ header:
   version: 14
 
   includes:
-  - tegra-base.yml
+  - yocto/scarthgap/floating/include/tegra-base.yml
 
 repos:
   meta-tegra:

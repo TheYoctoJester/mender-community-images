@@ -1,8 +1,8 @@
 header:
   version: 14
   includes:
-  - include/mender-full.yml
-  - include/raspberrypi.yml
+  - yocto/scarthgap/floating/include/mender-full.yml
+  - yocto/scarthgap/floating/include/raspberrypi.yml
 
 machine: raspberrypi5
 

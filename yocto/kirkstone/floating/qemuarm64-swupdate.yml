@@ -1,7 +1,7 @@
 header:
   version: 14
   includes:
-  - include/mender-base.yml
+  - yocto/kirkstone/floating/include/mender-base.yml
 
 machine: qemuarm64-swupdate
 

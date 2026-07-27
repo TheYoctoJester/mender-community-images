@@ -14,7 +14,7 @@
 header:
   version: 14
   includes:
-    - include/qcom.yml
+    - yocto/wrynose/floating/include/qcom.yml
 
 repos:
   meta-mender:

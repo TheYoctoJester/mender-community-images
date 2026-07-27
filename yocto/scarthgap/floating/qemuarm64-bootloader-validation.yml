@@ -1,7 +1,7 @@
 header:
   version: 14
   includes:
-  - qemuarm64.yml
+  - yocto/scarthgap/floating/qemuarm64.yml
 
 repos:
   meta-mender-community:

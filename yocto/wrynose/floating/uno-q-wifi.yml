@@ -12,7 +12,7 @@
 header:
   version: 14
   includes:
-    - uno-q.yml
+    - yocto/wrynose/floating/uno-q.yml
 
 repos:
   mender-community-images:

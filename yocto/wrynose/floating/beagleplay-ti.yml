@@ -1,9 +1,9 @@
 header:
   version: 14
   includes:
-  - include/mender-full.yml
-  - include/arm.yml
-  - include/ti.yml
+  - yocto/wrynose/floating/include/mender-full.yml
+  - yocto/wrynose/floating/include/arm.yml
+  - yocto/wrynose/floating/include/ti.yml
 
 repos:
   meta-mender-community:

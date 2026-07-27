@@ -1,7 +1,7 @@
 header:
   version: 14
   includes:
-  - mender-base.yml
+  - yocto/wrynose/floating/include/mender-base.yml
 
 local_conf_header:
   mender-full: |

@@ -1,5 +1,5 @@
 header:
   version: 14
   includes:
-  - qemuarm64.yml
-  - include/sulka.yml
+  - yocto/scarthgap/floating/qemuarm64.yml
+  - yocto/scarthgap/floating/include/sulka.yml

@@ -1,7 +1,7 @@
 header:
   version: 14
   includes:
-  - include/mender-full.yml
+  - yocto/scarthgap/floating/include/mender-full.yml
 
 repos:
   meta-intel:

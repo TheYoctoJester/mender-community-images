@@ -1,8 +1,8 @@
 header:
   version: 14
   includes:
-  - include/mender-full.yml
-  - include/arm.yml
+  - yocto/scarthgap/floating/include/mender-full.yml
+  - yocto/scarthgap/floating/include/arm.yml
 
 repos:
   meta-mender-community:

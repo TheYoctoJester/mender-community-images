@@ -1,7 +1,7 @@
 header:
   version: 14
   includes:
-  - raspberrypi4-64.yml
+  - yocto/scarthgap/floating/raspberrypi4-64.yml
 
 target: mender-app-update-image
 

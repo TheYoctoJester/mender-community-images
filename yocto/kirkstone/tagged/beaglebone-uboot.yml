@@ -1,7 +1,7 @@
 header:
   version: 14
   includes:
-  - beaglebone.yml
+  - yocto/kirkstone/tagged/beaglebone.yml
 
 local_conf_header:
   beaglebone-uboot: |
