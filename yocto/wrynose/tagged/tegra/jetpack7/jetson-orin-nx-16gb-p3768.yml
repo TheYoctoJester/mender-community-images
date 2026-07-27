@@ -1,0 +1,30 @@
+# NVIDIA Jetson Orin NX 16GB on the p3768 carrier (T234, machine
+# p3768-0000-p3767-0000), Jetpack 7 / L4T r39.2.0 — Mender OTA build.
+# Wrynose (Yocto 6.0) variant, pinned.
+#
+# Board support comes from meta-tegra (OE4T) plus the meta-mender-tegra-jetpack7
+# layer in meta-mender-community.
+#
+# Orin NX boots NVMe-only. The A/B slots come from meta-tegra's
+# ROOTFSPART_SIZE_DEFAULT for this module, 55 GiB, giving two 27.5 GiB slots on
+# APP=p1 and APP_b=p2. The data partition is permanet_user_storage=p17 (sic),
+# not
+# UDA: meta-mender-tegra substitutes its own external layout for this machine
+# so that the data partition is the last one on the device and
+# mender-growfs-data can expand it. On the stock layout the data partition sits
+# ahead of the rootfs slots and is stuck at 400 MiB.
+#
+# Unlike the scarthgap Jetpack 6 configuration for this module, this one sets
+# no EMMC_SIZE, MENDER_DATA_PART_NUMBER or MENDER_STORAGE_DEVICE. The layer
+# derives all three now. EMMC_SIZE in particular would abort the build: the
+# eMMC sizing path was removed for wrynose, where no machine has internal
+# storage.
+#
+# Not yet verified on hardware.
+header:
+  version: 14
+  includes:
+  - yocto/wrynose/include/mender-full.yml
+  - yocto/wrynose/include/tegra-jetpack7.yml
+
+machine: p3768-0000-p3767-0000
