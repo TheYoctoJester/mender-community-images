@@ -28,3 +28,11 @@ header:
   - yocto/wrynose/floating/include/tegra-jetpack7.yml
 
 machine: p3768-0000-p3767-0000
+
+# core-image-base rather than core-image-minimal: the Realtek RTL8111/8168 NIC
+# on the p3768 carrier is pulled in through MACHINE_EXTRA_RRECOMMENDS, which
+# only packagegroup-base consumes. core-image-minimal does not include it, so
+# the board boots with no network interface at all and a Mender client that can
+# never reach the server.
+target:
+  - core-image-base
