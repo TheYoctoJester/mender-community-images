@@ -149,7 +149,9 @@ Tagged include files under `yocto/<release>/include/` are the source of truth fo
 
 Floating builds do not pin layers; they take whatever is at branch tip when the build runs. The corresponding pins are still present in `yocto/<release>/floating/include/` but use `branch:` rather than `commit:`.
 
-Wrynose's floating includes deliberately reference `bitbake: master`, `meta-mender: master-next`, and `meta-raspberrypi: master` (see `yocto/wrynose/floating/include/mender-base.yml` and the per-board kas files). Upstream has not cut a `wrynose` branch for any of these three; `bitbake` uses numbered release branches that have not yet been opened for the wrynose-era release. Do not "fix" those pins to a wrynose branch name — they will be flipped to release refs once the corresponding upstream branches exist.
+Wrynose's floating includes still reference `bitbake: master`, `meta-mender: master-next`, and `meta-raspberrypi: master` (see `yocto/wrynose/floating/include/mender-base.yml` and the per-board kas files). That dated from a time when none of the three had a wrynose-era branch. All three now do: `meta-mender` and `meta-raspberrypi` have `wrynose`, and bitbake has opened `2.18`. Flipping the shared includes over affects every wrynose board and wants its own build round, so it has not been done yet.
+
+The Tegra configs are the exception and already use the release refs: `yocto/wrynose/{include,floating/include}/tegra-base.yml` pins `meta-mender` to `wrynose`, matching how the scarthgap Tegra configs pin it to `scarthgap`.
 
 ## CI
 
