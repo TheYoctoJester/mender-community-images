@@ -1,9 +1,9 @@
 header:
   version: 14
   includes:
-  - ../include/mender-full.yml
-  - ../include/arm.yml
-  - ../include/qemu.yml
+  - yocto/kirkstone/include/mender-full.yml
+  - yocto/kirkstone/include/arm.yml
+  - yocto/kirkstone/include/qemu.yml
 
 repos:
   meta-mender-community:

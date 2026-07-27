@@ -1,5 +1,5 @@
 header:
   version: 14
   includes:
-  - ../../floating/qemux86-64.yml
-  - ../../floating/include/validation.yml
+  - yocto/scarthgap/floating/qemux86-64.yml
+  - yocto/scarthgap/floating/include/validation.yml

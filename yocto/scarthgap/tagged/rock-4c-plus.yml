@@ -1,9 +1,9 @@
 header:
   version: 14
   includes:
-  - ../include/mender-full.yml
-  - ../include/arm.yml
-  - ../include/rockchip.yml
+  - yocto/scarthgap/include/mender-full.yml
+  - yocto/scarthgap/include/arm.yml
+  - yocto/scarthgap/include/rockchip.yml
 
 machine: rock-4c-plus
 

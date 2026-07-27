@@ -1,8 +1,8 @@
 header:
   version: 14
   includes:
-  - ../include/mender-base.yml
-  - ../include/qemu.yml
+  - yocto/scarthgap/include/mender-base.yml
+  - yocto/scarthgap/include/qemu.yml
 
 machine: vexpress-qemu
 

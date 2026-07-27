@@ -1,5 +1,5 @@
 header:
   version: 14
   includes:
-  - ../../floating/raspberrypi5.yml
-  - ../../floating/include/validation.yml
+  - yocto/wrynose/floating/raspberrypi5.yml
+  - yocto/wrynose/floating/include/validation.yml

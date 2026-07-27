@@ -1,9 +1,9 @@
 header:
   version: 14
   includes:
-  - ../include/mender-full.yml
-  - ../include/arm.yml
-  - ../include/ti.yml
+  - yocto/scarthgap/include/mender-full.yml
+  - yocto/scarthgap/include/arm.yml
+  - yocto/scarthgap/include/ti.yml
 
 machine: beaglebone-ai64
 

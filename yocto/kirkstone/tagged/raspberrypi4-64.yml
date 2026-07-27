@@ -1,7 +1,7 @@
 header:
   version: 14
   includes:
-  - ../include/mender-full.yml
-  - ../include/raspberrypi.yml
+  - yocto/kirkstone/include/mender-full.yml
+  - yocto/kirkstone/include/raspberrypi.yml
 
 machine: raspberrypi4-64

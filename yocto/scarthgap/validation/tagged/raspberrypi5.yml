@@ -1,5 +1,5 @@
 header:
   version: 14
   includes:
-  - ../../tagged/raspberrypi5.yml
-  - ../../include/validation.yml
+  - yocto/scarthgap/tagged/raspberrypi5.yml
+  - yocto/scarthgap/include/validation.yml

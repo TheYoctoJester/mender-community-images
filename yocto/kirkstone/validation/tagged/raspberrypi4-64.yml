@@ -1,5 +1,5 @@
 header:
   version: 14
   includes:
-  - ../../tagged/raspberrypi4-64.yml
-  - ../../include/validation.yml
+  - yocto/kirkstone/tagged/raspberrypi4-64.yml
+  - yocto/kirkstone/include/validation.yml

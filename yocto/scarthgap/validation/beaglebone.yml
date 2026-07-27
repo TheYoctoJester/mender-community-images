@@ -1,5 +1,5 @@
 header:
   version: 14
   includes:
-  - ../tagged/beaglebone.yml
-  - ../include/validation.yml
+  - yocto/scarthgap/tagged/beaglebone.yml
+  - yocto/scarthgap/include/validation.yml

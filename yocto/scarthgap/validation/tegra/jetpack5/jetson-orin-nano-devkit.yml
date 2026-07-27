@@ -1,5 +1,5 @@
 header:
   version: 14
   includes:
-  - ../../../tagged/tegra/jetpack5/jetson-orin-nano-devkit.yml
-  - ../../../include/validation.yml
+  - yocto/scarthgap/tagged/tegra/jetpack5/jetson-orin-nano-devkit.yml
+  - yocto/scarthgap/include/validation.yml

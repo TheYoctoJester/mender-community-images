@@ -1,5 +1,5 @@
 header:
   version: 14
   includes:
-  - ../../floating/qemuarm64.yml
-  - ../../floating/include/validation.yml
+  - yocto/wrynose/floating/qemuarm64.yml
+  - yocto/wrynose/floating/include/validation.yml

@@ -1,8 +1,8 @@
 header:
   version: 14
   includes:
-  - ../include/mender-full.yml
-  - ../include/qemu.yml
+  - yocto/kirkstone/include/mender-full.yml
+  - yocto/kirkstone/include/qemu.yml
 
 machine: qemux86-64
 

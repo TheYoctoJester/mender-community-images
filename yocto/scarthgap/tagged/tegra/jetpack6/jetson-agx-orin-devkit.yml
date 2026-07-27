@@ -1,8 +1,8 @@
 header:
   version: 14
   includes:
-  - ../../../include/mender-full.yml
-  - ../../../include/tegra-jetpack6.yml
+  - yocto/scarthgap/include/mender-full.yml
+  - yocto/scarthgap/include/tegra-jetpack6.yml
 
 machine: jetson-agx-orin-devkit
 

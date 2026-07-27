@@ -1,9 +1,9 @@
 header:
   version: 14
   includes:
-  - ../include/mender-full.yml
-  - ../include/arm.yml
-  - ../include/qemu.yml
+  - yocto/scarthgap/include/mender-full.yml
+  - yocto/scarthgap/include/arm.yml
+  - yocto/scarthgap/include/qemu.yml
 
 repos:
   meta-mender-community:

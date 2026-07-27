@@ -1,5 +1,5 @@
 header:
   version: 14
   includes:
-  - ../../floating/beaglebone.yml
-  - ../../floating/include/validation.yml
+  - yocto/kirkstone/floating/beaglebone.yml
+  - yocto/kirkstone/floating/include/validation.yml

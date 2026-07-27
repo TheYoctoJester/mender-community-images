@@ -1,5 +1,5 @@
 header:
   version: 14
   includes:
-  - ../../floating/raspberrypi-armv8.yml
-  - ../../floating/include/validation.yml
+  - yocto/wrynose/floating/raspberrypi-armv8.yml
+  - yocto/wrynose/floating/include/validation.yml

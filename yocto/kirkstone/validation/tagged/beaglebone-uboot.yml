@@ -1,5 +1,5 @@
 header:
   version: 14
   includes:
-  - ../../tagged/beaglebone-uboot.yml
-  - ../../include/validation.yml
+  - yocto/kirkstone/tagged/beaglebone-uboot.yml
+  - yocto/kirkstone/include/validation.yml

@@ -1,5 +1,5 @@
 header:
   version: 14
   includes:
-  - ../../floating/qemux86-64.yml
-  - ../../floating/include/validation.yml
+  - yocto/kirkstone/floating/qemux86-64.yml
+  - yocto/kirkstone/floating/include/validation.yml
