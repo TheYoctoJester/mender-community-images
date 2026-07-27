@@ -28,9 +28,13 @@ yocto/
 │   │   └── tegra/{jetpack5,jetpack6}/
 │   ├── demos/
 │   └── validation/
-└── wrynose/                       # Floating only (no tagged yet)
+└── wrynose/
+    ├── include/                   # Tagged pins (Tegra only so far)
+    ├── tagged/
+    │   └── tegra/jetpack7/
     ├── floating/
-    │   └── include/
+    │   ├── include/
+    │   └── tegra/jetpack7/
     └── validation/
         └── floating/
 
@@ -133,9 +137,11 @@ Maintained on demand only as of 2026-06-15 — kas configs preserved, no schedul
 - **BeagleBone** — Black, Black U-Boot.
 - **QEMU** — `qemuarm64`, `qemux86-64`.
 
-### Wrynose (floating only)
+### Wrynose
 
-One of the two maintained LTS tiers alongside scarthgap. Same board set as kirkstone — `qemu{arm64,x86-64}`, RPi {3-64,4-64,5,ARMv8}, BeagleBone {Black, U-Boot} — plus BeaglePlay (TI AM625) and the Arduino Uno Q (Qualcomm QRB2210, `uno-q.yml`; STM32U585 MCU firmware via the `mcu` multiconfig in `uno-q-mcu-firmware.yml`), and the experimental Digilent Arty Z7-20 (`arty-z7-20`, Xilinx Zynq-7000). Floating-only: a `tagged/` tier will be added once upstream cuts wrynose branches for `meta-mender` and `meta-raspberrypi` (neither has one yet). The `arty-z7-20` config additionally rides meta-xilinx `wrynose-next` (no wrynose branch yet) and is not build- or hardware-verified.
+One of the two maintained LTS tiers alongside scarthgap. Same board set as kirkstone — `qemu{arm64,x86-64}`, RPi {3-64,4-64,5,ARMv8}, BeagleBone {Black, U-Boot} — plus BeaglePlay (TI AM625) and the Arduino Uno Q (Qualcomm QRB2210, `uno-q.yml`; STM32U585 MCU firmware via the `mcu` multiconfig in `uno-q-mcu-firmware.yml`), the experimental Digilent Arty Z7-20 (`arty-z7-20`, Xilinx Zynq-7000), and the NVIDIA Jetson AGX Thor devkit (T264, Jetpack 7, `tegra/jetpack7/jetson-agx-thor-devkit.yml`). The `arty-z7-20` config additionally rides meta-xilinx `wrynose-next` (no wrynose branch yet) and is not build- or hardware-verified.
+
+Tegra is currently the only board with a `tagged/` tier here; the rest are floating-only. See the pinning note below.
 
 ## Layer pinning
 

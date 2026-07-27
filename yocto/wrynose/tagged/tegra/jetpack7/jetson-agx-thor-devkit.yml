@@ -1,0 +1,25 @@
+# NVIDIA Jetson AGX Thor devkit (T264, Jetpack 7 / L4T r39.2.0) — Mender OTA
+# build. Wrynose (Yocto 6.0) variant, pinned.
+#
+# Board support comes from meta-tegra (OE4T) plus the meta-mender-tegra-jetpack7
+# layer in meta-mender-community.
+#
+# Thor is NVMe-only: there is no eMMC, so the A/B rootfs slots and the data
+# partition come from NVIDIA's stock redundant external-flash layout
+# (flash_l4t_t264_nvme_rootfs_ab.xml) rather than from a computed eMMC total.
+# meta-mender-tegra sizes the slots from meta-tegra's ROOTFSPART_SIZE_DEFAULT,
+# which yields two 25 GiB slots (APP=p1, APP_b=p2) with the data partition on
+# UDA=p11.
+#
+# Build verified against these pins; not yet verified on hardware.
+header:
+  version: 14
+  includes:
+  - yocto/wrynose/include/mender-full.yml
+  - yocto/wrynose/include/tegra-jetpack7.yml
+
+machine: jetson-agx-thor-devkit
+
+local_conf_header:
+  AB-upgrades: |
+    USE_REDUNDANT_FLASH_LAYOUT_DEFAULT = "1"

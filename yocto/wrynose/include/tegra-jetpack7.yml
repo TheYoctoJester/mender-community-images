@@ -1,0 +1,23 @@
+header:
+  version: 14
+
+  includes:
+  - yocto/wrynose/include/tegra-base.yml
+
+repos:
+  meta-tegra:
+    # refers to the wrynose branch
+    commit: 6a0294838e8e0180a40cd3d48d7d0fce1deb3ef2
+  meta-tegra-community:
+    # refers to the wrynose branch
+    commit: 3cdf23379dfc7082e2d4957f5f1d90eda02170e7
+  meta-tegrademo:
+    # refers to the wrynose branch
+    commit: 37e974f3479de348b0ef87a0363beeed9db46f91
+
+  meta-mender-community:
+    url: https://github.com/mendersoftware/meta-mender-community.git
+    # refers to the wrynose branch
+    commit: 78b2895adcf2053595e1508bc5846aa1c3d033ba
+    layers:
+      meta-mender-tegra/meta-mender-tegra-jetpack7:
