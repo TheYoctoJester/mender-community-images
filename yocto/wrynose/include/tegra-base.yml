@@ -33,8 +33,11 @@ repos:
 
   meta-mender-community:
     url: https://github.com/mendersoftware/meta-mender-community.git
-    # refers to the wrynose branch
-    commit: 78b2895adcf2053595e1508bc5846aa1c3d033ba
+    # PR #527, on top of wrynose da74aec: makes the shell scripts this layer
+    # installs run under busybox ash, which core-image-minimal needs. Not merged
+    # yet; re-pin to the merge commit once it is. GitHub serves the commit from
+    # the upstream URL even though it originates in a fork.
+    commit: 4a6dc1f5073517fa8c9e77475be36e1eb3393963
     layers:
       meta-mender-tegra/meta-mender-tegra-common:
 
