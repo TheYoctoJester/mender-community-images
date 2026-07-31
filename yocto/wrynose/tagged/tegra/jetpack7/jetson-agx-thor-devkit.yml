@@ -17,6 +17,7 @@ header:
   includes:
   - yocto/wrynose/include/mender-full.yml
   - yocto/wrynose/include/tegra-jetpack7.yml
+  - yocto/wrynose/include/tegra-classic.yml
 
 machine: jetson-agx-thor-devkit
 

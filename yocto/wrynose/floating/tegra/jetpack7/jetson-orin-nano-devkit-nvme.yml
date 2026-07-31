@@ -34,6 +34,7 @@ header:
   includes:
   - yocto/wrynose/floating/include/mender-full.yml
   - yocto/wrynose/floating/include/tegra-jetpack7.yml
+  - yocto/wrynose/floating/include/tegra-classic.yml
 
 machine: jetson-orin-nano-devkit-nvme
 

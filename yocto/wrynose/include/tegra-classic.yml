@@ -1,0 +1,39 @@
+# The classic Tegra update scheme: Mender's stock rootfs-image update module,
+# driven through meta-mender-tegra-classic's state scripts and fw_printenv shims.
+#
+# meta-mender-tegra ships one layer per update scheme and they are mutually
+# exclusive, so exactly one scheme include belongs in a board configuration,
+# alongside tegra-jetpack<N>.yml. This is the scheme every board here uses and
+# the one verified on hardware.
+header:
+  version: 14
+
+  includes:
+  - yocto/wrynose/include/tegra-base.yml
+
+repos:
+  meta-mender-community:
+    url: https://github.com/mendersoftware/meta-mender-community.git
+    # FIXME: this pin predates the layer split, so it does not carry
+    # meta-mender-tegra-classic and the tagged configurations cannot resolve it
+    # yet. Re-pin all three of tegra-base.yml, tegra-jetpack7.yml and this file
+    # to the merge commit of the split, and keep them in step: kas fetches one
+    # commit per repo, and where two files disagree the last one merged wins
+    # silently. The floating tier needs no change, it tracks the branch.
+    commit: 00d671550dfce83f702f6a9e0bcbc2124d4b334a
+    layers:
+      meta-mender-tegra/meta-mender-tegra-classic:
+
+local_conf_header:
+  # A separate key from tegra-base.yml's "tegra" block on purpose: kas merges
+  # local_conf_header by key, so reusing the name would replace that block
+  # instead of adding to it.
+  tegra-scheme: |
+    INHERIT += "tegra-mender-classic"
+    # Set here rather than in tegra-base.yml because it names the artifact type
+    # the scheme emits: the classic scheme uses meta-mender's stock "mender"
+    # type. Assigned outright, since meta-tegra sets IMAGE_FSTYPES:tegra itself.
+    #
+    # meta-tegra renamed the flashable image type tegraflash -> tegraflash-tar
+    # in the Jetpack 7 / wrynose era.
+    IMAGE_FSTYPES:tegra = "tegraflash-tar mender dataimg"
