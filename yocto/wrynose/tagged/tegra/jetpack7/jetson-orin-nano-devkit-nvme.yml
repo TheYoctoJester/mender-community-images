@@ -1,0 +1,46 @@
+# NVIDIA Jetson Orin Nano 8GB Developer Kit booting from an M.2 NVMe SSD (T234,
+# machine jetson-orin-nano-devkit-nvme), Jetpack 7 / L4T r39.2.0 — Mender OTA
+# build. Wrynose (Yocto 6.0) variant, pinned.
+#
+# Same module as the microSD configuration next to this one, differing only in
+# where the rootfs lives. The machine prepends jetson-orin-nano-devkit to its
+# MACHINEOVERRIDES, which is why meta-mender-tegra carries an explicit
+# MENDER_STORAGE_DEVICE_DEFAULT for this machine: without it the SD-card
+# override would win and point the client at mmcblk1.
+#
+# The A/B slots come from NVIDIA's stock external layout,
+# flash_l4t_t234_nvme_rootfs_ab.xml: APP=p1, APP_b=p2, esp=p11, UDA=p15.
+# meta-mender-tegra rewrites the UDA partition's filename to DATAFILE. That
+# layout places the data partition ahead of the rootfs slots, so
+# mender-growfs-data cannot expand it and /data stays at 400 MiB. The Orin NX
+# 16GB configuration substitutes a layout with a trailing, growable data
+# partition; extend that override to this machine if /data size becomes a
+# problem.
+#
+# ROOTFSPART_SIZE_DEFAULT for orin-nano is 28 GiB, so two 14 GiB slots. Any SSD
+# of 64 GB or more is comfortable.
+#
+# Note that writing an external drive on this platform goes through
+# initrd-flash, which needs the board in recovery mode over USB. There is no
+# SD-Mux equivalent for the M.2 slot.
+#
+# Unlike the scarthgap Orin Nano configurations, do NOT set EMMC_SIZE here: the
+# wrynose layer fails the build on it, because that sizing path was dropped
+# along with the tegra210/186/194 machines.
+#
+# Not yet verified on hardware.
+header:
+  version: 14
+  includes:
+  - yocto/wrynose/include/mender-full.yml
+  - yocto/wrynose/include/tegra-jetpack7.yml
+
+machine: jetson-orin-nano-devkit-nvme
+
+# core-image-base rather than core-image-minimal: the Realtek RTL8111/8168 NIC
+# on the p3768 carrier is pulled in through MACHINE_EXTRA_RRECOMMENDS, which
+# only packagegroup-base consumes. core-image-minimal does not include it, so
+# the board boots with no network interface at all and a Mender client that can
+# never reach the server.
+target:
+  - core-image-base

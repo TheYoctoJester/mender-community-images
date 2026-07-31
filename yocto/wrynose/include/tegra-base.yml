@@ -33,11 +33,9 @@ repos:
 
   meta-mender-community:
     url: https://github.com/mendersoftware/meta-mender-community.git
-    # PR #527, on top of wrynose da74aec: makes the shell scripts this layer
-    # installs run under busybox ash, which core-image-minimal needs. Not merged
-    # yet; re-pin to the merge commit once it is. GitHub serves the commit from
-    # the upstream URL even though it originates in a fork.
-    commit: 4a6dc1f5073517fa8c9e77475be36e1eb3393963
+    # Merge of PR #527, which makes the shell scripts this layer installs run
+    # under busybox ash, as core-image-minimal needs.
+    commit: 00d671550dfce83f702f6a9e0bcbc2124d4b334a
     layers:
       meta-mender-tegra/meta-mender-tegra-common:
 

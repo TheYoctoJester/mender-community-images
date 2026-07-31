@@ -1,0 +1,52 @@
+# NVIDIA Jetson Orin Nano 8GB Developer Kit booting from microSD (T234, machine
+# jetson-orin-nano-devkit), Jetpack 7 / L4T r39.2.0 — Mender OTA build.
+# Wrynose (Yocto 6.0) variant, pinned.
+#
+# The machine already carries everything this board needs: boardsku 0005, chip
+# SKU D5, the p3767-0005 kernel device tree and the SD-card flash layout. It is
+# the 8GB "Super" module; the 4GB p3767-0004 has different SDRAM timings and no
+# SD-boot machine of its own, so it is not covered here.
+#
+# Storage is the microSD on the carrier, which enumerates as mmcblk1. The layer
+# derives that from the machine name; no MENDER_STORAGE_DEVICE override needed.
+#
+# USE_REDUNDANT_FLASH_LAYOUT selects flash_t234_qspi_sd_rootfs_ab.xml, whose
+# user partitions are laid out exactly like the NVMe A/B layout already proven
+# on the Orin NX: APP=p1, APP_b=p2, esp=p11, UDA=p15. That last one matches
+# MENDER_DATA_PART_NUMBER_DEFAULT:tegra234, so nothing has to be overridden.
+# meta-mender-tegra rewrites the UDA partition's filename to DATAFILE so the
+# mender data image lands there.
+#
+# As with the stock NVMe layout, UDA sits ahead of the rootfs slots, so
+# mender-growfs-data cannot expand it and /data stays at 400 MiB.
+#
+# Card size: meta-tegra's ROOTFSPART_SIZE_DEFAULT for orin-nano is 28 GiB,
+# giving two 14 GiB slots, and the layout adds roughly 1.93 GiB of fixed
+# partitions on top. That needs a 64 GB card. A nominal 32 GB one is about
+# 160 MiB short; if you only have one of those, pin MENDER_STORAGE_TOTAL_SIZE_MB
+# down rather than expecting it to fit.
+#
+# Note that flashing the SD card alone is not sufficient to bring a board onto
+# this configuration. The UEFI image and the rootfs A/B enable overlay live in
+# QSPI, which needs one RCM flash over USB first.
+#
+# Unlike the scarthgap Orin Nano configurations, do NOT set EMMC_SIZE here: the
+# wrynose layer fails the build on it, because that sizing path was dropped
+# along with the tegra210/186/194 machines.
+#
+# Not yet verified on hardware.
+header:
+  version: 14
+  includes:
+  - yocto/wrynose/include/mender-full.yml
+  - yocto/wrynose/include/tegra-jetpack7.yml
+
+machine: jetson-orin-nano-devkit
+
+# core-image-base rather than core-image-minimal: the Realtek RTL8111/8168 NIC
+# on the p3768 carrier is pulled in through MACHINE_EXTRA_RRECOMMENDS, which
+# only packagegroup-base consumes. core-image-minimal does not include it, so
+# the board boots with no network interface at all and a Mender client that can
+# never reach the server.
+target:
+  - core-image-base
