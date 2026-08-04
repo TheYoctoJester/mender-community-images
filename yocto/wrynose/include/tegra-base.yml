@@ -32,10 +32,17 @@ repos:
     commit: 781735b97ae5013cacabbecd38e6da6b510cf3fb
 
   meta-mender-community:
-    url: https://github.com/mendersoftware/meta-mender-community.git
-    # Merge of PR #527, which makes the shell scripts this layer installs run
-    # under busybox ash, as core-image-minimal needs.
-    commit: 00d671550dfce83f702f6a9e0bcbc2124d4b334a
+    # In flight: the classic/native layer split, PR-A. Points at the fork while
+    # the branch is under review, because meta-mender-tegra-classic does not
+    # exist on mendersoftware/wrynose yet.
+    #
+    # All three of tegra-base.yml, tegra-jetpack7.yml and tegra-classic.yml must
+    # name the same url and commit: kas fetches one commit per repo, and where
+    # two files disagree the last one merged wins silently. Put them back to
+    # mendersoftware and the merge commit of the split when it lands.
+    url: https://github.com/TheYoctoJester/meta-mender-community.git
+    # tip of tegra-layer-split
+    commit: 176f26eb4636c890379e890fc105355f2362ffd8
     layers:
       meta-mender-tegra/meta-mender-tegra-common:
 

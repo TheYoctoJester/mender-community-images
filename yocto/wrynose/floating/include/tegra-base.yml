@@ -33,8 +33,15 @@ repos:
     branch: wrynose
 
   meta-mender-community:
-    url: https://github.com/mendersoftware/meta-mender-community.git
-    branch: wrynose
+    # In flight: tracks the classic/native layer split, PR-A, on the fork. The
+    # branch on mendersoftware carries no meta-mender-tegra-classic yet, so this
+    # tier cannot follow it until the split merges.
+    #
+    # All three tegra includes must name the same url and branch: kas fetches one
+    # revision per repo and the last file merged wins silently. Put them back to
+    # mendersoftware and branch wrynose when the split lands.
+    url: https://github.com/TheYoctoJester/meta-mender-community.git
+    branch: tegra-layer-split
     layers:
       meta-mender-tegra/meta-mender-tegra-common:
 
