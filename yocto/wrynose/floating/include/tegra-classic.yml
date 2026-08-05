@@ -15,11 +15,12 @@ repos:
   meta-mender-community:
     # In flight: tracks the classic/native layer split, PR-A, on the fork. The
     # branch on mendersoftware carries no meta-mender-tegra-classic yet, so this
-    # tier cannot follow it until the split merges.
+    # tier cannot follow it until the split merges. Put this back to mendersoftware
+    # and branch wrynose when it lands.
     #
-    # All three tegra includes must name the same url and branch: kas fetches one
-    # revision per repo and the last file merged wins silently. Put them back to
-    # mendersoftware and branch wrynose when the split lands.
+    # This file is the only one naming a revision for this repo. tegra-base.yml and
+    # tegra-jetpack7.yml contribute layer entries and leave the revision alone, so
+    # nothing depends on which include kas merges last.
     url: https://github.com/TheYoctoJester/meta-mender-community.git
     branch: tegra-layer-split
     layers:

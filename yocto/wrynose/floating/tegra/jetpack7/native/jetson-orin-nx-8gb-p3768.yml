@@ -1,0 +1,36 @@
+# NVIDIA Jetson Orin NX 8GB on the p3768 carrier (T234, machine
+# p3768-0000-p3767-0001), Jetpack 7 / L4T r39.2.0 — Mender OTA build with the
+# Tegra-native update scheme. Wrynose (Yocto 6.0) variant, floating.
+#
+# The same board as ../jetson-orin-nx-8gb-p3768.yml, differing only
+# in which update scheme it selects. Everything about the hardware, the partition
+# layout and the A/B slot sizing is described there and applies unchanged.
+#
+# What changes is inside the artifact. This scheme emits the tegra-rootfs-image
+# payload type, carrying the rootfs and the UEFI capsule, and the device installs
+# it with an update module that calls nvbootctrl and the capsule directly rather
+# than through fw_printenv shims and Mender state scripts. The file keeps the
+# canonical .mender name, so nothing about uploading or deploying changes.
+#
+# The two schemes are mutually exclusive on the device as well as in the build: an
+# artifact from one cannot be installed by the other, in either direction, so a
+# board cannot be moved between them by an update. Choose per board, at flash time.
+#
+# Verified on hardware: happy path in both slot directions, both rollback paths,
+# and an RCM flash followed by an over-the-air update.
+header:
+  version: 14
+  includes:
+  - yocto/wrynose/floating/include/mender-full.yml
+  - yocto/wrynose/floating/include/tegra-jetpack7.yml
+  - yocto/wrynose/floating/include/tegra-native.yml
+
+machine: p3768-0000-p3767-0001
+
+# core-image-base rather than core-image-minimal: the Realtek RTL8111/8168 NIC
+# on the p3768 carrier is pulled in through MACHINE_EXTRA_RRECOMMENDS, which
+# only packagegroup-base consumes. core-image-minimal does not include it, so
+# the board boots with no network interface at all and a Mender client that can
+# never reach the server.
+target:
+  - core-image-base

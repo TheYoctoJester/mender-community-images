@@ -32,9 +32,11 @@ yocto/
     ├── include/                   # Tagged pins (Tegra only so far)
     ├── tagged/
     │   └── tegra/jetpack7/
+    │       └── native/            # configs selecting the Tegra-native scheme
     ├── floating/
     │   ├── include/
     │   └── tegra/jetpack7/
+    │       └── native/
     └── validation/
         └── floating/
 

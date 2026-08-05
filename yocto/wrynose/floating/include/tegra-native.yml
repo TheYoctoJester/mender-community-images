@@ -1,0 +1,49 @@
+# The Tegra-native update scheme: a tegra-rootfs-image update module that drives
+# nvbootctrl, the BSP partlabels and the UEFI capsule directly, instead of Mender's
+# stock rootfs-image module and the adapters meta-mender-tegra-classic supplies for
+# it on Tegra.
+#
+# meta-mender-tegra ships one layer per update scheme and they are mutually
+# exclusive, so exactly one scheme include belongs in a board configuration,
+# alongside tegra-jetpack<N>.yml. A build with both is refused at configuration
+# parse time.
+#
+# The classic scheme is the one every other board here uses and the one with the
+# longer hardware record. Pick this one to avoid the adapter stack: no fw_printenv
+# shims, no Mender state scripts, no RootfsPartA/B entries in mender.conf.
+header:
+  version: 14
+
+  includes:
+  - yocto/wrynose/floating/include/tegra-base.yml
+
+repos:
+  meta-mender-community:
+    # In flight: tracks the native layer, PR-B, which is stacked on the
+    # classic/native split. Points at the fork because neither layer exists on
+    # mendersoftware/wrynose yet. Re-point this when the split and the native layer
+    # land.
+    #
+    # A different branch from tegra-classic.yml on purpose: that one needs only the
+    # split, this one needs the split plus the native layer. This file is the only
+    # one naming a revision for this repo, so the two cannot collide.
+    url: https://github.com/TheYoctoJester/meta-mender-community.git
+    branch: tegra-native-layer
+    layers:
+      meta-mender-tegra/meta-mender-tegra-native:
+
+local_conf_header:
+  # A separate key from tegra-base.yml's "tegra" block on purpose: kas merges
+  # local_conf_header by key, so reusing the name would replace that block
+  # instead of adding to it. The same key as tegra-classic.yml uses, since only
+  # one scheme include is ever present.
+  tegra-scheme: |
+    INHERIT += "tegra-mender-native"
+    # No "mender" here, unlike the classic scheme: this one emits its own artifact
+    # type, tegra-mender-native, under the same canonical .mender name. Leaving
+    # both in would have two do_image tasks writing one path, and the scheme class
+    # removes the stock type anyway.
+    #
+    # meta-tegra renamed the flashable image type tegraflash -> tegraflash-tar in
+    # the Jetpack 7 / wrynose era.
+    IMAGE_FSTYPES:tegra = "tegraflash-tar dataimg"
