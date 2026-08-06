@@ -7,8 +7,21 @@
 # the 8GB "Super" module; the 4GB p3767-0004 has different SDRAM timings and no
 # SD-boot machine of its own, so it is not covered here.
 #
-# Storage is the microSD on the carrier, which enumerates as mmcblk1. The layer
-# derives that from the machine name; no MENDER_STORAGE_DEVICE override needed.
+# Storage is the microSD on the carrier, which enumerates as mmcblk0. An Orin Nano
+# module has no eMMC, so sdmmc1 is the only MMC controller on the board and takes
+# index 0. The layer's tegra default is already mmcblk0, so nothing is overridden
+# here.
+#
+# Note that a board which also has a bootable NVMe fitted will not boot this card
+# at all. meta-tegra ships DefaultBootPriority = "usb,nvme,emmc,sd,ufs" in
+# L4TConfiguration.dtbo and marks it 'locked', so UEFI takes the NVMe and no
+# runtime setting can change it. Reorder that string in the overlay before the
+# QSPI flash, or flash a board that has only a card.
+#
+# On such a two-disk board, watch /boot/efi as well: both media carry an 'esp'
+# partlabel, systemd's gpt-auto generator binds whichever it finds, and the native
+# scheme stages its capsule into whatever is mounted there. /dev/disk/by-partlabel
+# resolves to the boot medium correctly, so slot selection is unaffected.
 #
 # USE_REDUNDANT_FLASH_LAYOUT selects flash_t234_qspi_sd_rootfs_ab.xml, whose
 # user partitions are laid out exactly like the NVMe A/B layout already proven
@@ -34,7 +47,9 @@
 # wrynose layer fails the build on it, because that sizing path was dropped
 # along with the tegra210/186/194 machines.
 #
-# Not yet verified on hardware.
+# Verified on hardware 2026-08-06 on a p3767-0005 devkit: booted from the card at
+# mmcblk0p1 with /data on p15, and one A/B deployment installed, switched slots and
+# committed.
 header:
   version: 14
   includes:

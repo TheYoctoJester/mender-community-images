@@ -4,9 +4,9 @@
 #
 # Same module as the microSD configuration next to this one, differing only in
 # where the rootfs lives. The machine prepends jetson-orin-nano-devkit to its
-# MACHINEOVERRIDES, which is why meta-mender-tegra carries an explicit
-# MENDER_STORAGE_DEVICE_DEFAULT for this machine: without it the SD-card
-# override would win and point the client at mmcblk1.
+# MACHINEOVERRIDES, which is why meta-mender-tegra states
+# MENDER_STORAGE_DEVICE_DEFAULT for this machine explicitly rather than leaning on
+# the TNSPEC_BOOTDEV expression it shares with the SD one.
 #
 # The A/B slots come from NVIDIA's stock external layout,
 # flash_l4t_t234_nvme_rootfs_ab.xml: APP=p1, APP_b=p2, esp=p11, UDA=p15.
@@ -28,7 +28,9 @@
 # wrynose layer fails the build on it, because that sizing path was dropped
 # along with the tegra210/186/194 machines.
 #
-# Not yet verified on hardware.
+# Verified on hardware 2026-08-06 on a p3767-0005 devkit: booted from nvme0n1p1
+# with /data on p15, and one A/B deployment installed, switched slots and
+# committed.
 header:
   version: 14
   includes:

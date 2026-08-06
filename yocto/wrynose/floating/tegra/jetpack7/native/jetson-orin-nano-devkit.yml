@@ -5,7 +5,7 @@
 # The same board and medium as ../classic/jetson-orin-nano-devkit.yml, differing
 # only in which update scheme it selects. Everything about the module, the
 # SD-card A/B layout with APP=p1, APP_b=p2, esp=p11 and UDA=p15, and the derived
-# mmcblk1 storage device is described there and applies unchanged: the scheme
+# mmcblk0 storage device is described there and applies unchanged: the scheme
 # does not touch the data partition, and the module resolves the rootfs slots by
 # the APP and APP_b partlabels, which the SD layout names just as the NVMe one
 # does.
@@ -19,6 +19,12 @@
 # The two schemes are mutually exclusive on the device as well as in the build: an
 # artifact from one cannot be installed by the other, in either direction, so a
 # board cannot be moved between them by an update. Choose per board, at flash time.
+#
+# One caveat specific to this scheme on a board that also has an NVMe fitted: the
+# module stages its UEFI capsule into whatever is mounted at /boot/efi, and with an
+# 'esp' partlabel on both media systemd's gpt-auto generator may well mount the
+# other disk's ESP. The capsule then lands where UEFI does not look and the slot
+# switch silently does not happen. Pin the mount if a board carries both.
 #
 # Flashing this medium is two steps, and neither is optional. make-sdcard writes
 # only the <device type="sdcard"> partitions, while the UEFI image and the
