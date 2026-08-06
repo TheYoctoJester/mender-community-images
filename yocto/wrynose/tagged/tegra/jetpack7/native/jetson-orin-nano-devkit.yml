@@ -1,0 +1,47 @@
+# NVIDIA Jetson Orin Nano 8GB Developer Kit booting from microSD (T234, machine
+# jetson-orin-nano-devkit), Jetpack 7 / L4T r39.2.0 — Mender OTA build with the
+# Tegra-native update scheme. Wrynose (Yocto 6.0) variant, pinned.
+#
+# The same board and medium as ../classic/jetson-orin-nano-devkit.yml, differing
+# only in which update scheme it selects. Everything about the module, the
+# SD-card A/B layout with APP=p1, APP_b=p2, esp=p11 and UDA=p15, and the derived
+# mmcblk1 storage device is described there and applies unchanged: the scheme
+# does not touch the data partition, and the module resolves the rootfs slots by
+# the APP and APP_b partlabels, which the SD layout names just as the NVMe one
+# does.
+#
+# What changes is inside the artifact. This scheme emits the tegra-rootfs-image
+# payload type, carrying the rootfs and the UEFI capsule, and the device installs
+# it with an update module that calls nvbootctrl and the capsule directly rather
+# than through fw_printenv shims and Mender state scripts. The file keeps the
+# canonical .mender name, so nothing about uploading or deploying changes.
+#
+# The two schemes are mutually exclusive on the device as well as in the build: an
+# artifact from one cannot be installed by the other, in either direction, so a
+# board cannot be moved between them by an update. Choose per board, at flash time.
+#
+# Flashing this medium is two steps, and neither is optional. make-sdcard writes
+# only the <device type="sdcard"> partitions, while the UEFI image and the
+# RootfsRedundancyLevelABEnable overlay that turns on rootfs A/B live in QSPI,
+# which is reachable only with the board in recovery mode over USB. So: an RCM
+# flash for QSPI, then the card.
+#
+# The card must hold 31,626,400,256 bytes, two 14 GiB slots plus roughly 1.93 GiB
+# of fixed partitions. Note that nothing checks this at build time:
+# TEGRAFLASH_SDCARD_SIZE is dead on this branch, and capacity is enforced only
+# when sgdisk runs at flash time, where it fails with "ERR: partitioning failed".
+header:
+  version: 14
+  includes:
+  - yocto/wrynose/include/mender-full.yml
+  - yocto/wrynose/include/tegra-jetpack7.yml
+  - yocto/wrynose/include/tegra-native.yml
+
+machine: jetson-orin-nano-devkit
+
+# core-image-base rather than core-image-minimal: the Realtek NIC on the p3768
+# carrier arrives through MACHINE_EXTRA_RRECOMMENDS, which only packagegroup-base
+# consumes, so core-image-minimal boots with no network interface and a Mender
+# client that can never reach the server.
+target:
+  - core-image-base
