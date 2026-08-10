@@ -7,13 +7,13 @@ header:
 repos:
   meta-tegra:
     # refers to the wrynose branch
-    commit: 6a0294838e8e0180a40cd3d48d7d0fce1deb3ef2
+    commit: 727633deca9b72643112d1aebadafb736dad60c0
   meta-tegra-community:
     # refers to the wrynose branch
-    commit: 3cdf23379dfc7082e2d4957f5f1d90eda02170e7
+    commit: f9600de48fd7c7dfd711af71430f2afb3705cf33
   meta-tegrademo:
     # refers to the wrynose branch
-    commit: 37e974f3479de348b0ef87a0363beeed9db46f91
+    commit: 4c9e2ccdb5d3399a6559133da97b89324c5c1878
 
   meta-mender-community:
     # url and revision are named by the update-scheme include, tegra-classic.yml
