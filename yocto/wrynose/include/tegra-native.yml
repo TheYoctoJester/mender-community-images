@@ -29,7 +29,7 @@ repos:
     # only one naming a revision for this repo, so the two cannot collide.
     url: https://github.com/TheYoctoJester/meta-mender-community.git
     # tip of tegra-native-layer
-    commit: 793ad31adb5dcc88d891f10cafc0a7e66ec6218a
+    commit: cb4633a072ea355ae9695c64a3b811cb892649cd
     layers:
       meta-mender-tegra/meta-mender-tegra-native:
 
