@@ -23,7 +23,7 @@ repos:
     # nothing depends on which include kas merges last.
     url: https://github.com/TheYoctoJester/meta-mender-community.git
     # tip of tegra-layer-split
-    commit: f918f0d453ce8ef7efe22ac051620d85b09d965a
+    commit: 1e32b8f761fbb4ef01ff3e922400f532fa90aa83
     layers:
       meta-mender-tegra/meta-mender-tegra-classic:
 
