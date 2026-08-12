@@ -36,6 +36,10 @@
 # of fixed partitions. Note that nothing checks this at build time:
 # TEGRAFLASH_SDCARD_SIZE is dead on this branch, and capacity is enforced only
 # when sgdisk runs at flash time, where it fails with "ERR: partitioning failed".
+#
+# Verified on hardware on a p3767-0005 devkit booting from the card: deployments in both
+# slot directions, the non-committing rollback, the hostile-ESP case, and a classic
+# artifact cleanly refused by this scheme.
 header:
   version: 14
   includes:

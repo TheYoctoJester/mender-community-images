@@ -20,7 +20,9 @@
 # No EMMC_SIZE, MENDER_DATA_PART_NUMBER or MENDER_STORAGE_DEVICE overrides are
 # needed: the layer derives all three.
 #
-# Not yet verified on hardware.
+# Verified on hardware: flashed over RCM with initrd-flash, then deployments in both
+# slot directions, a rollback that condemned the target slot and fell back, recovery of
+# that slot, and a return to the base image.
 header:
   version: 14
   includes:

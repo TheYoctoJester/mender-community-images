@@ -22,6 +22,10 @@
 # Note that writing this drive goes through initrd-flash with the board in
 # recovery mode over USB, which also writes QSPI. There is no SD-Mux equivalent
 # for the M.2 slot.
+#
+# Verified on hardware on a p3767-0005 devkit booting from NVMe: deployments in both slot
+# directions, the non-committing rollback, and a classic artifact cleanly refused by this
+# scheme.
 header:
   version: 14
   includes:
