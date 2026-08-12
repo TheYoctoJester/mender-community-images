@@ -19,16 +19,13 @@ header:
 
 repos:
   meta-mender-community:
-    # In flight: the native layer, PR-B. The classic/native split has landed, so
-    # tegra-classic.yml is back on mendersoftware, but meta-mender-tegra-native
-    # does not exist there yet. Put this back to mendersoftware and the merge
-    # commit when it does.
-    #
-    # A different revision from tegra-classic.yml on purpose, and this file is the
-    # only one naming a revision for this repo, so the two cannot collide.
-    url: https://github.com/TheYoctoJester/meta-mender-community.git
-    # tip of tegra-native-layer
-    commit: fe47c74d6fdf8defdb8f3fd0af1b6e11f6d5ff7b
+    # This file is the only one naming a revision for this repo. tegra-base.yml and
+    # tegra-jetpack7.yml contribute layer entries and leave the revision alone, so
+    # nothing depends on which include kas merges last. tegra-classic.yml names a
+    # revision too, but only one scheme include is ever present in a build.
+    url: https://github.com/mendersoftware/meta-mender-community.git
+    # merge of the native layer
+    commit: f6860e099fe97260612380dd0092e854831bd9c0
     layers:
       meta-mender-tegra/meta-mender-tegra-native:
 

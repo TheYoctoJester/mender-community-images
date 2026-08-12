@@ -19,15 +19,12 @@ header:
 
 repos:
   meta-mender-community:
-    # In flight: tracks the native layer, PR-B. The classic/native split has
-    # landed, so tegra-classic.yml follows mendersoftware wrynose again, but
-    # meta-mender-tegra-native is not there yet. Put this back to mendersoftware
-    # and branch wrynose when it lands.
-    #
-    # A different branch from tegra-classic.yml on purpose, and this file is the
-    # only one naming a revision for this repo, so the two cannot collide.
-    url: https://github.com/TheYoctoJester/meta-mender-community.git
-    branch: tegra-native-layer
+    # This file is the only one naming a revision for this repo. tegra-base.yml and
+    # tegra-jetpack7.yml contribute layer entries and leave the revision alone, so
+    # nothing depends on which include kas merges last. tegra-classic.yml names a
+    # revision too, but only one scheme include is ever present in a build.
+    url: https://github.com/mendersoftware/meta-mender-community.git
+    branch: wrynose
     layers:
       meta-mender-tegra/meta-mender-tegra-native:
 
