@@ -13,17 +13,12 @@ header:
 
 repos:
   meta-mender-community:
-    # In flight: the classic/native layer split, PR-A. Points at the fork while
-    # the branch is under review, because meta-mender-tegra-classic does not exist
-    # on mendersoftware/wrynose yet. Put this back to mendersoftware and the merge
-    # commit of the split when it lands.
-    #
     # This file is the only one naming a revision for this repo. tegra-base.yml and
     # tegra-jetpack7.yml contribute layer entries and leave the revision alone, so
     # nothing depends on which include kas merges last.
-    url: https://github.com/TheYoctoJester/meta-mender-community.git
-    # tip of tegra-layer-split
-    commit: 1e32b8f761fbb4ef01ff3e922400f532fa90aa83
+    url: https://github.com/mendersoftware/meta-mender-community.git
+    # merge of the classic/native layer split
+    commit: 60bb57a50699eafe5a42ceb5f450d33a13f26ca3
     layers:
       meta-mender-tegra/meta-mender-tegra-classic:
 

@@ -19,14 +19,13 @@ header:
 
 repos:
   meta-mender-community:
-    # In flight: tracks the native layer, PR-B, which is stacked on the
-    # classic/native split. Points at the fork because neither layer exists on
-    # mendersoftware/wrynose yet. Re-point this when the split and the native layer
-    # land.
+    # In flight: tracks the native layer, PR-B. The classic/native split has
+    # landed, so tegra-classic.yml follows mendersoftware wrynose again, but
+    # meta-mender-tegra-native is not there yet. Put this back to mendersoftware
+    # and branch wrynose when it lands.
     #
-    # A different branch from tegra-classic.yml on purpose: that one needs only the
-    # split, this one needs the split plus the native layer. This file is the only
-    # one naming a revision for this repo, so the two cannot collide.
+    # A different branch from tegra-classic.yml on purpose, and this file is the
+    # only one naming a revision for this repo, so the two cannot collide.
     url: https://github.com/TheYoctoJester/meta-mender-community.git
     branch: tegra-native-layer
     layers:
