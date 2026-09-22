@@ -1,0 +1,8 @@
+# kas puts layer checkouts and the bitbake build directory in the working
+# directory it is invoked from, and the README tells you to invoke it from
+# the repository root. Keep those out of the index.
+build/
+sstate-cache/
+downloads/
+my-*/
+*.lock
