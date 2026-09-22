@@ -1,0 +1,66 @@
+# NXP i.MX 93 11x11 LPDDR4X EVK — Mender OTA build, wrynose, pinned.
+#
+# Board support comes from the community meta-freescale layer only. No
+# meta-imx: meta-freescale wrynose is self-contained for i.MX93
+# (u-boot-imx lf_v2025.04, linux-imx 6.18, imx-atf 2.14, imx-boot,
+# firmware-imx, imx-m33-demos) and still selects NXP's BSP through
+# IMX_DEFAULT_BSP = "nxp". Mender board support is meta-mender-nxp.
+#
+# Do not substitute MACHINE imx93evk. That is NXP's consolidated machine
+# in meta-imx-bsp; it only requires imx93-11x11-lpddr4x-evk.conf and adds
+# FRDM/QSB/14x14 device trees on top.
+#
+# Boots from microSD (USDHC2, mmcblk1). SW1301 pole 2 ON, all others OFF.
+# The eMMC stays untouched as mmcblk0.
+#
+# See meta-mender-nxp/README.md for the gotcha list.
+header:
+  version: 14
+  includes:
+  - yocto/wrynose/include/mender-full.yml
+
+repos:
+  meta-freescale:
+    url: https://github.com/Freescale/meta-freescale.git
+    # refers to the wrynose branch
+    commit: c35d3dc9b0a1b42a80e41b78307d4612abdfdc71
+
+  meta-mender-community:
+    # meta-mender-nxp was dropped from meta-mender-community on wrynose.
+    # Until it is restored upstream, take it from the fork.
+    url: https://github.com/theyoctojester/meta-mender-community.git
+    # refers to the imx93-evk-wrynose branch
+    commit: 0d000dcea5089d7857a6fc4959b213d8354aa2de
+    layers:
+      meta-mender-nxp:
+
+machine: imx93-11x11-lpddr4x-evk
+
+# core-image-base rather than the core-image-minimal that mender-base.yml
+# defaults to: it brings udev, networking and firmware loading, which is
+# what makes ethernet and the SD/eMMC split verifiable on first boot.
+target:
+  - core-image-base
+
+local_conf_header:
+  nxp: |
+    ACCEPT_FSL_EULA = "1"
+    INHERIT += "nxp-mender-common"
+
+  imx93-evk: |
+    # microSD. The eMMC is mmcblk0 and stays untouched.
+    MENDER_STORAGE_DEVICE = "/dev/mmcblk1"
+
+    # Size of the generated .sdimg, not a requirement on the card. It sets
+    # the two rootfs slots to about 1.9 GB each plus a 128 MB data
+    # partition; mender-growfs-data expands data to fill the real medium
+    # on first boot, so a 4 GB image is fine on the 57 GB bench card.
+    MENDER_STORAGE_TOTAL_SIZE_MB = "4096"
+    MENDER_BOOT_PART_SIZE_MB = "64"
+
+    # U-Boot environment lives in the MMC user area, not a boot partition.
+    MENDER_UBOOT_CONFIG_SYS_MMC_ENV_PART = "0"
+
+    # imx-boot, its BootROM offset, the partition alignment it needs, and
+    # appending boot.scr to IMAGE_BOOT_FILES all come from meta-mender-nxp
+    # as SoC-family defaults.

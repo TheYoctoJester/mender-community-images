@@ -145,7 +145,9 @@ Maintained on demand only as of 2026-06-15 — kas configs preserved, no schedul
 
 One of the two maintained LTS tiers alongside scarthgap. Same board set as kirkstone — `qemu{arm64,x86-64}`, RPi {3-64,4-64,5,ARMv8}, BeagleBone {Black, U-Boot} — plus BeaglePlay (TI AM625) and the Arduino Uno Q (Qualcomm QRB2210, `uno-q.yml`; STM32U585 MCU firmware via the `mcu` multiconfig in `uno-q-mcu-firmware.yml`), the experimental Digilent Arty Z7-20 (`arty-z7-20`, Xilinx Zynq-7000), and the NVIDIA Jetsons under Jetpack 7: AGX Thor devkit (T264, `tegra/jetpack7/classic/jetson-agx-thor-devkit.yml`), Orin NX on the p3768 carrier in 16GB and 8GB variants (T234, `tegra/jetpack7/classic/jetson-orin-nx-{16gb,8gb}-p3768.yml`, both also with the Tegra-native update scheme under `tegra/jetpack7/native/`, of which only the 8GB one is hardware-verified), and the Orin Nano 8GB devkit in its microSD and M.2 NVMe variants (T234, `tegra/jetpack7/classic/jetson-orin-nano-devkit{,-nvme}.yml`). The `arty-z7-20` config additionally rides meta-xilinx `wrynose-next` (no wrynose branch yet) and is not build- or hardware-verified.
 
-Tegra is currently the only board with a `tagged/` tier here; the rest are floating-only. See the pinning note below.
+The NXP i.MX 93 11x11 LPDDR4X EVK (`imx93-11x11-lpddr4x-evk`) is built on the community meta-freescale layer alone, with no `meta-imx`, and boots Mender A/B from microSD. Its board support is the `meta-mender-nxp` layer, which upstream dropped on wrynose and which is therefore taken from a fork until it is restored; see the note in the config. The floating variant is not hardware-verified.
+
+Tegra and the i.MX 93 EVK are the only boards with a `tagged/` tier here; the rest are floating-only. See the pinning note below.
 
 ## Layer pinning
 
