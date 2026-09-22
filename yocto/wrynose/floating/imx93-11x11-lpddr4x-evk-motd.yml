@@ -1,0 +1,20 @@
+# i.MX 93 11x11 LPDDR4X EVK plus the artifact-motd demo layer.
+#
+# Gives each build a rootfs that matches its artifact name, so an A/B update
+# is visible on the device and a rollback is verifiable.
+#
+# Build twice with different names to get a deployable pair, for example by
+# appending a fragment that sets MENDER_ARTIFACT_NAME.
+header:
+  version: 14
+  includes:
+  - yocto/wrynose/floating/imx93-11x11-lpddr4x-evk.yml
+
+repos:
+  mender-community-images:
+    layers:
+      yocto/wrynose/demos/meta-mender-artifact-motd:
+
+local_conf_header:
+  motd: |
+    INHERIT += "artifact-motd"
