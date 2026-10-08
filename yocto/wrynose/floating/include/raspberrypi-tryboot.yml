@@ -17,11 +17,11 @@ header:
 #   MENDER_TENANT_TOKEN = "<your token>"
 
 repos:
-  # agherzan's BSP; no wrynose branch exists yet, track master (same as the
-  # other wrynose raspberrypi configs).
+  # agherzan's BSP, wrynose branch (same as the other wrynose raspberrypi
+  # configs).
   meta-raspberrypi:
     url: https://github.com/agherzan/meta-raspberrypi.git
-    branch: master
+    branch: wrynose
 
   # The tryboot layer (Update Module, tryboot WKS + wic plugin, data partition
   # and wait-for-clock glue).

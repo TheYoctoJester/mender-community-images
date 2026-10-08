@@ -52,11 +52,11 @@ repos:
     layers:
       meta-rauc-raspberrypi:
 
-  # Raspberry Pi BSP. Tracks master until upstream cuts wrynose, matching the
-  # other wrynose RPi configs (see include/raspberrypi.yml).
+  # Raspberry Pi BSP, wrynose branch, matching the other wrynose RPi configs
+  # (see include/raspberrypi.yml).
   meta-raspberrypi:
     url: https://github.com/agherzan/meta-raspberrypi.git
-    branch: master
+    branch: wrynose
 
   # The Mender client (client-only) + the RAUC<->Mender glue.
   meta-mender-community:

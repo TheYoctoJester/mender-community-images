@@ -29,7 +29,7 @@ machine: raspberrypi4-64
 repos:
   meta-raspberrypi:
     url: https://github.com/agherzan/meta-raspberrypi.git
-    branch: master
+    branch: wrynose
 
   meta-mender-community:
     url: https://github.com/theyoctojester/meta-mender-community.git
