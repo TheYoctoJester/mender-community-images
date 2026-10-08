@@ -29,11 +29,11 @@ target:
 
 repos:
   # OSTree/sota integration (image_types_ostree, image_types_ota, ostree native).
-  # Pinned to the wrynose tip at authoring time -- the wrynose branch currently
-  # tracks master, so pin for reproducibility rather than float.
+  # Floats on wrynose like the other layers: breakage from upstream drift is
+  # fixed forward, not pinned around.
   meta-updater:
     url: https://github.com/uptane/meta-updater.git
-    commit: f0e1ccafaa877d2781ed953236981dac57439dc8
+    branch: wrynose
 
   # runqemu must boot via u-boot.bin (QB_DEFAULT_KERNEL=none) rather than a
   # -kernel injection, so the OSTree boot script runs; same oe-core fix the
