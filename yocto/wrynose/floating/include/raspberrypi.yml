@@ -4,7 +4,7 @@ header:
 repos:
   meta-raspberrypi:
     url: https://github.com/agherzan/meta-raspberrypi.git
-    branch: master
+    branch: wrynose
 
   meta-mender-community:
     url: https://github.com/mendersoftware/meta-mender-community.git
